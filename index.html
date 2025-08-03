@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-    
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Abid Network</title>
@@ -1122,6 +1122,7 @@
                         <button id="export-data-btn" class="btn btn-submit">ডেটা এক্সপোর্ট করুন (JSON)</button>
                         <input type="file" id="import-file-input" accept=".json" style="display: none;">
                         <button id="import-data-btn" class="btn btn-submit" style="background-color: #2B6CB0;">ডেটা ইমপোর্ট করুন</button>
+                        <button id="save-to-drive-btn" class="btn btn-submit" style="background-color: #34A853; display: none;">গুগল ড্রাইভে সেভ করুন</button>
                     </div>
                     <div class="settings-section" style="margin-top: 30px;">
                         <h2>অ্যাপ রিসেট</h2>
@@ -4561,7 +4562,113 @@
     document.addEventListener('DOMContentLoaded', function() {
         updateLastExportDate();
     });
-    
+    /* GOOGLE DRIVE API INTEGRATION CODE */
+
+const CLIENT_ID = '325411899048-logql2nip4ff5mpveda82gmcsfii2me2.apps.googleusercontent.com'; // ⚠️ এখানে আপনার নিজের Client ID বসান
+const API_KEY = 'YOUR_API_KEY'; // API Key আপাতত প্রয়োজন নেই, তবে ভবিষ্যতে লাগতে পারে
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+
+function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+}
+
+async function initializeGapiClient() {
+    await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+    });
+    gapiInited = true;
+    maybeEnableButtons();
+}
+
+function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '', // The callback is handled by the Promise mechanism
+    });
+    gisInited = true;
+    maybeEnableButtons();
+}
+
+function maybeEnableButtons() {
+    if (gapiInited && gisInited) {
+        const saveBtn = document.getElementById('save-to-drive-btn');
+        if(saveBtn) {
+            saveBtn.style.display = 'inline-block'; // বাটনটি দেখান
+            saveBtn.onclick = handleAuthClick;
+        }
+    }
+}
+
+function handleAuthClick() {
+    if (gapi.client.getToken() === null) {
+        // Prompt the user to select a Google Account and ask for consent to share their data
+        tokenClient.callback = async (resp) => {
+            if (resp.error !== undefined) {
+                throw (resp);
+            }
+            await uploadDataToDrive();
+        };
+
+        if (gapi.client.getToken() === null) {
+            // Prompt the user to select a Google Account and ask for consent to share their data
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+            // Skip display of account chooser and consent dialog for an existing session
+            tokenClient.requestAccessToken({prompt: ''});
+        }
+    } else {
+        uploadDataToDrive();
+    }
+}
+
+async function uploadDataToDrive() {
+    try {
+        // 1. ডেটা প্রস্তুত করুন
+        const dataToSave = localStorage.getItem('abidNetworkDb_v41');
+        if (!dataToSave) {
+            alert('কোনো ডেটা পাওয়া যায়নি।');
+            return;
+        }
+        const fileName = `abid_network_backup_${new Date().toISOString().split('T')[0]}.json`;
+        const fileContent = dataToSave;
+        const file = new Blob([fileContent], {type: 'application/json'});
+
+        const metadata = {
+            'name': fileName,
+            'mimeType': 'application/json',
+        };
+
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+        form.append('file', file);
+
+        // 2. ফাইল আপলোড করুন
+        alert('আপনার ডেটা গুগল ড্রাইভে আপলোড করা হচ্ছে...');
+        const response = await gapi.client.request({
+            path: 'https://www.googleapis.com/upload/drive/v3/files',
+            method: 'POST',
+            params: {uploadType: 'multipart'},
+            headers: {
+                'Authorization': `Bearer ${gapi.client.getToken().access_token}`
+            },
+            body: form
+        });
+
+        alert(`ফাইল সফলভাবে আপলোড হয়েছে! ফাইলের নাম: ${fileName}`);
+        console.log(response.result);
+
+    } catch (err) {
+        alert('ফাইল আপলোড করার সময় একটি সমস্যা হয়েছে।');
+        console.error(err);
+    }
+}
+/* END OF GOOGLE DRIVE API CODE */
     </script>
 </body>
 </html>
