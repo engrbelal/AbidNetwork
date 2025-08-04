@@ -1736,8 +1736,9 @@
         </div>
     </div>
 
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
 
     <script>
               function toBengaliNumber(engNumber) {
@@ -3762,35 +3763,55 @@
         updateLastExportDate();
     });
 
-    // --- START: Google Drive API Integration ---
+    // --- START: Google Drive API Integration (IMPROVED) ---
     const API_KEY = 'AIzaSyClmKLln_NHzw4nvY0ldKneSSirclKtPLM'; // আপনার API Key এখানে বসান
     const CLIENT_ID = '325411899048-logql2nip4ff5mpveda82gmcsfii2me2.apps.googleusercontent.com'; // আপনার Client ID এখানে বসান
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
     let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
 
-    function initGoogleDriveApi() {
-        gapi.load('client:auth2', async () => {
-            try {
-                await gapi.client.init({
-                    apiKey: API_KEY,
-                    clientId: CLIENT_ID,
-                    scope: SCOPES,
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                });
-
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    callback: '', // Response handled by promise
-                });
-                
-                document.getElementById('save-to-drive-btn').style.display = 'inline-block';
-            } catch (error) {
-                console.error('Error initializing Google API client:', error);
-            }
-        });
+    // Step 1: Load the GAPI client library
+    function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
     }
 
+    // Step 2: Initialize the GAPI client
+    async function initializeGapiClient() {
+        try {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+            });
+            gapiInited = true;
+            maybeEnableButton();
+        } catch (error) {
+            console.error('Error initializing GAPI client:', error);
+        }
+    }
+
+    // Step 3: Load the GIS client library
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: '', // Response handled by promise
+        });
+        gisInited = true;
+        maybeEnableButton();
+    }
+
+    // Step 4: Enable the button only when both libraries are ready
+    function maybeEnableButton() {
+        if (gapiInited && gisInited) {
+            const saveBtn = document.getElementById('save-to-drive-btn');
+            if(saveBtn) {
+                saveBtn.style.display = 'inline-block';
+            }
+        }
+    }
+
+    // Step 5: Handle authentication
     async function handleAuthClick() {
         return new Promise((resolve, reject) => {
             try {
@@ -3807,12 +3828,13 @@
                     tokenClient.requestAccessToken({prompt: ''});
                 }
             } catch (err) {
-                console.log(err);
+                console.error(err);
                 reject(err);
             }
         });
     }
 
+    // Step 6: The function to save the file
     async function saveToDrive() {
         try {
             await handleAuthClick();
@@ -3846,7 +3868,7 @@
             alert('গুগল ড্রাইভে ফাইল সেভ করতে সমস্যা হয়েছে।');
         }
     }
-    // --- END: Google Drive API Integration ---
+    // --- END: Google Drive API Integration (IMPROVED) ---
 
     </script>
 </body>
