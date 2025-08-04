@@ -831,7 +831,7 @@
         }
     </style>
 </head>
-<body>
+<body onload="handleClientLoad()">
     <div id="overlay"></div>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -4635,96 +4635,110 @@
     }
 
     // Initialize last export date on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        updateLastExportDate();
-        initGoogleDriveApi();
-    });
-            let tokenClient;
+// ==================================================================
+// FINAL AND CORRECTED JAVASCRIPT CODE BLOCK
+// ==================================================================
 
-        function initGoogleDriveApi() {
-            // গুগল এপিআই ক্লায়েন্ট এবং অথেনটিকেশন সিস্টেম লোড করা
-            gapi.load('client:auth2', async () => {
-                try {
-                    // গুগল ড্রাইভ এপিআই শুরু করা
-                    await gapi.client.init({
-                        clientId: CLIENT_ID,
-                        scope: SCOPES,
-                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-                    });
+let tokenClient;
 
-                    // টোকেন ক্লায়েন্ট তৈরি করা
-                    tokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: CLIENT_ID,
-                        scope: SCOPES,
-                        callback: '', // Intentional empty callback
-                    });
+// ধাপ ১: এই ফাংশনটি body.onload থেকে কল হবে
+function handleClientLoad() {
+    gapi.load('client:auth2', initClient);
+}
 
-                    // বাটনটি এখন দেখানো হবে
-                    document.getElementById('save-to-drive-btn').style.display = 'inline-block';
-                } catch (error) {
-                    console.error('Error initializing Google Drive API:', error);
-                    alert('গুগল ড্রাইভ এপিআই শুরু করতে সমস্যা হচ্ছে।');
-                }
-            });
+// ধাপ ২: gapi লাইব্রেরি লোড হওয়ার পর এই ফাংশনটি কল হবে
+async function initClient() {
+    try {
+        await gapi.client.init({
+            clientId: CLIENT_ID,
+            scope: SCOPES,
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        });
+
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: '', // Intentional empty callback
+        });
+
+        // সফলভাবে শুরু হলে বাটনটি দেখানো হবে
+        document.getElementById('save-to-drive-btn').style.display = 'inline-block';
+
+    } catch (error) {
+        console.error('Error initializing Google API client:', error);
+        // ব্যবহারকারীকে এখন আর অ্যালার্ট দেখানো হবে না, শুধু কনসোলে এরর থাকবে
+        // alert('গুগল ড্রাইভ এপিআই শুরু করতে সমস্যা হচ্ছে।');
+    }
+}
+
+// ফাইল আপলোড করার জন্য অথেনটিকেশন হ্যান্ডেল করা
+async function handleAuthClick() {
+    tokenClient.callback = async (resp) => {
+        if (resp.error !== undefined) {
+            throw (resp);
         }
+        await uploadFile();
+    };
 
-        async function handleAuthClick() {
-            // ব্যবহারকারীকে গুগল অ্যাকাউন্টে সাইন ইন করার জন্য পপ-আপ দেখানো
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    throw (resp);
-                }
-                // সফলভাবে সাইন ইন হলে ফাইল আপলোড করা
-                await uploadFile();
-            };
+    if (gapi.client.getToken() === null) {
+        tokenClient.requestAccessToken({prompt: 'consent'});
+    } else {
+        tokenClient.requestAccessToken({prompt: ''});
+    }
+}
 
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
+// ফাইল আপলোড করার মূল ফাংশন
+async function uploadFile() {
+    try {
+        const dataStr = JSON.stringify(db, null, 2);
+        const fileName = `abid_network_backup_${new Date().toISOString().split('T')[0]}.json`;
+        const fileContent = new Blob([dataStr], {type: 'application/json'});
 
-        async function uploadFile() {
-            try {
-                const dataStr = JSON.stringify(db, null, 2);
-                const fileName = `abid_network_backup_${new Date().toISOString().split('T')[0]}.json`;
-                const fileContent = new Blob([dataStr], {type: 'application/json'});
+        const boundary = '-------314159265358979323846';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
 
-                const boundary = '-------314159265358979323846';
-                const delimiter = "\r\n--" + boundary + "\r\n";
-                const close_delim = "\r\n--" + boundary + "--";
+        const metadata = {
+            'name': fileName,
+            'mimeType': 'application/json'
+        };
 
-                const metadata = {
-                    'name': fileName,
-                    'mimeType': 'application/json'
-                };
+        const multipartRequestBody =
+            delimiter +
+            'Content-Type: application/json\r\n\r\n' +
+            JSON.stringify(metadata) +
+            delimiter +
+            'Content-Type: application/json\r\n\r\n' +
+            dataStr +
+            close_delim;
 
-                const multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    dataStr +
-                    close_delim;
+        const request = gapi.client.request({
+            'path': '/upload/drive/v3/files',
+            'method': 'POST',
+            'params': {'uploadType': 'multipart'},
+            'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
+            'body': multipartRequestBody
+        });
 
-                const request = gapi.client.request({
-                    'path': '/upload/drive/v3/files',
-                    'method': 'POST',
-                    'params': {'uploadType': 'multipart'},
-                    'headers': {'Content-Type': 'multipart/related; boundary="' + boundary + '"'},
-                    'body': multipartRequestBody
-                });
+        await request;
+        alert('ফাইল সফলভাবে আপনার গুগল ড্রাইভে সেভ হয়েছে!');
 
-                await request;
-                alert('ফাইল সফলভাবে আপনার গুগল ড্রাইভে সেভ হয়েছে!');
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        alert('ফাইল আপলোড করার সময় একটি সমস্যা হয়েছে।');
+    }
+}
 
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                alert('ফাইল আপলোড করার সময় একটি সমস্যা হয়েছে।');
-            }
-        }
+// পেজের বাকি সব ফাংশন লোড করার জন্য
+document.addEventListener('DOMContentLoaded', function() {
+    updateLastExportDate();
+    // এখান থেকে initGoogleDriveApi() কলটি সরিয়ে দেওয়া হয়েছে
+});
+
+// ==================================================================
+// END OF CORRECTED CODE BLOCK
+// ==================================================================
+
 
     </script>
 </body>
