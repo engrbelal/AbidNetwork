@@ -1756,6 +1756,18 @@
             }
             return bengaliStr;
         }
+           function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
+    }
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: '', // Response handled by promise
+        });
+        gisInited = true;
+        maybeEnableButton();
+    }
     document.addEventListener('DOMContentLoaded', () => {
         const DATABASE_KEY = 'abidNetworkDb_v41';
         const LAST_PAGE_KEY = 'abidNetworkLastPage';
@@ -3772,9 +3784,7 @@
     let gisInited = false;
 
     // Step 1: Load the GAPI client library
-    function gapiLoaded() {
-        gapi.load('client', initializeGapiClient);
-    }
+ 
 
     // Step 2: Initialize the GAPI client
     async function initializeGapiClient() {
@@ -3791,15 +3801,7 @@
     }
 
     // Step 3: Load the GIS client library
-    function gisLoaded() {
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: '', // Response handled by promise
-        });
-        gisInited = true;
-        maybeEnableButton();
-    }
+    
 
     // Step 4: Enable the button only when both libraries are ready
     function maybeEnableButton() {
