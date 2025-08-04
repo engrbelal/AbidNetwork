@@ -1740,6 +1740,21 @@
     <script src="https://accounts.google.com/gsi/client"></script>
 
     <script>
+              function toBengaliNumber(engNumber) {
+            if (engNumber === null || engNumber === undefined) return '';
+            const engStr = String(engNumber);
+            const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+            let bengaliStr = '';
+            for (let i = 0; i < engStr.length; i++) {
+                const char = engStr[i];
+                if (char >= '0' && char <= '9') {
+                    bengaliStr += bengaliDigits[parseInt(char)];
+                } else {
+                    bengaliStr += char;
+                }
+            }
+            return bengaliStr;
+        }
     document.addEventListener('DOMContentLoaded', () => {
         const DATABASE_KEY = 'abidNetworkDb_v41';
         const LAST_PAGE_KEY = 'abidNetworkLastPage';
@@ -1759,22 +1774,6 @@
             routers: [],
             locations: []
         };
-
-        function toBengaliNumber(engNumber) {
-            if (engNumber === null || engNumber === undefined) return '';
-            const engStr = String(engNumber);
-            const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-            let bengaliStr = '';
-            for (let i = 0; i < engStr.length; i++) {
-                const char = engStr[i];
-                if (char >= '0' && char <= '9') {
-                    bengaliStr += bengaliDigits[parseInt(char)];
-                } else {
-                    bengaliStr += char;
-                }
-            }
-            return bengaliStr;
-        }
 
         function migrateDb(data) {
             if (!data.routers) data.routers = [];
