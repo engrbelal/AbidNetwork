@@ -262,14 +262,16 @@
         .total-customer-summary h2 { margin: 0; font-size: 17px; }
         .total-customer-summary p { margin: 4px 0 0; font-size: 22px; font-weight: bold; }
         .footer {
-            text-align: center;
-            padding: 8px;
-            background-color: #E2E8F0;
-            color: #2D3748;
-            font-size: 10px;
-            margin-top: auto;
-            page-break-before: avoid;
-        }
+    text-align: center;
+    padding: 10px; /* প্যাডিং সামান্য বাড়ানো হলো আরও সুন্দর দেখানোর জন্য */
+    background-color: #2D3748; /* নতুন ব্যাকগ্রাউন্ড কালার */
+    color: #A0AEC0; /* নতুন টেক্সট কালার */
+    font-size: 11px; /* ফন্ট সাইজ সামান্য বাড়ানো হলো */
+    margin-top: auto;
+    page-break-before: avoid;
+    border-top: 1px solid #4A5568; /* উপরে একটি হালকা বর্ডার যোগ করা হলো */
+}
+
         .dashboard-summary-grid { 
             display: grid !important; 
             grid-template-columns: repeat(2, 1fr) !important; 
@@ -1109,7 +1111,22 @@
                         <div class="dashboard-summary-card total-unpaid"><h3>মোট বকেয়া</h3><p id="db-total-unpaid">৳0</p></div>
                     </div>
                 </div>
-                
+                <!-- ★★★ নতুন বিল রিমাইন্ডার বক্সের কোড (এখানে যোগ করুন) ★★★ -->
+<div id="bill-reminder-notification" style="display: none; background: linear-gradient(135deg, #FFF3CD 0%, #FCE4EC 100%); border: 1px solid #F0AD4E; border-radius: 6px; padding: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- আইকন -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="#E53E3E" style="flex-shrink: 0;">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <!-- লেখা -->
+        <div id="bill-reminder-content-wrapper" style="flex-grow: 1;">
+            <!-- রিমাইন্ডারের লেখা এখানে স্বয়ংক্রিয়ভাবে আসবে -->
+        </div>
+        <!-- বাটন -->
+        <button id="view-due-bills-btn" class="btn btn-delete" style="font-size: 11px; padding: 4px 8px; flex-shrink: 0;">তালিকা দেখুন</button>
+    </div>
+</div>
+
                 <!-- Dashboard Backup Notification -->
                 <div id="dashboard-backup-reminder-notification" style="display: none; background: linear-gradient(135deg, #FFF3CD 0%, #FCE4EC 100%); border: 1px solid #F0AD4E; border-radius: 6px; padding: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1131,7 +1148,11 @@
                     </div>
                     <div id="no-activities" class="no-activities" style="display: none;">
                         <p>কোনো সাম্প্রতিক কার্যক্রম পাওয়া যায়নি।</p>
-                    </div>
+                    </div><!-- নতুন কোড শুরু -->
+<div id="activity-loader" style="text-align: center; margin-top: 20px; display: none;">
+    <button class="btn btn-submit" id="load-more-activities-btn">আরো দেখুন</button>
+</div>
+<!-- নতুন কোড শেষ -->
                 </div>
             </main>
 
@@ -1929,47 +1950,6 @@ function saveDb() {
     // Global variable to track which bill the payment modal is opened for
     let currentPaymentBillId = null;
     
-    /**
-     * পেমেন্ট জমা দেওয়ার প্রক্রিয়া সম্পন্ন করে।
-     */
-    function submitPayment() {
-        const receivedAmountInput = document.getElementById('payment-amount-input');
-        const receivedAmount = parseFloat(receivedAmountInput.value);
-
-        if (isNaN(receivedAmount) || receivedAmount <= 0) {
-            alert('অনুগ্রহ করে একটি বৈধ টাকার পরিমাণ লিখুন!');
-            return;
-        }
-
-        if (!currentPaymentBillId) {
-            alert('ত্রুটি: বিল আইডি পাওয়া যায়নি!');
-            return;
-        }
-
-        // পেমেন্ট প্রক্রিয়া শুরু করা
-        logPayment(currentPaymentBillId, receivedAmount);
-
-        // মোডাল বন্ধ করা
-        closePaymentModal();
-
-        // বিলিং পৃষ্ঠা এবং ড্যাশবোর্ড রিফ্রেশ করা
-        renderBillingPage();
-        renderDashboard(); // ড্যাশবোর্ড সবসময় আপডেট রাখা ভালো
-
-
-
-        alert('পেমেন্ট সফলভাবে জমা হয়েছে!');
-    }
-
-    /**
-     * পেমেন্ট মোডাল এবং ওভারলে বন্ধ করে।
-     */
-    function closePaymentModal() {
-        document.getElementById('paymentModal').classList.remove('active');
-        document.getElementById('overlay').style.display = 'none';
-        currentPaymentBillId = null; // বিল আইডি রিসেট করা
-    }
-    
     // Global database variable
     let db = {
         customers: [],
@@ -1978,69 +1958,19 @@ function saveDb() {
         routers: [],
         locations: []
     };
-    
+    // Global database variable
+// নতুন ভেরিয়েবল শুরু
+let displayedActivitiesCount = 0;
+const ACTIVITIES_PER_PAGE = 10; // প্রতিবার ১০টি করে লোড হবে
+// নতুন ভেরিয়েবল শেষ
+
     /**
      * পেমেন্টের হিসাব রাখে এবং ডেটাবেস আপডেট করে।
      * @param {string} billId - বিলের আইডি।
      * @param {number} receivedAmount - প্রাপ্ত টাকার পরিমাণ।
      */
-    function logPayment(billId, receivedAmount) {
-    const billIndex = db.bills.findIndex(b => b.id === billId);
-    if (billIndex === -1) return;
+// এই নতুন ফাংশনটি logPayment ফাংশনের ঠিক উপরে বসবে
 
-    const bill = db.bills[billIndex];
-    const customer = db.customers.find(c => c.id === bill.customerId);
-    if (!customer) return;
-
-    // ১. পেমেন্ট ইতিহাসে নতুন এন্ট্রি যোগ করা
-    if (!bill.paymentHistory) {
-        bill.paymentHistory = [];
-    }
-    bill.paymentHistory.push({
-        id: Date.now() + Math.random(),
-        amount: receivedAmount,
-        date: new Date().toISOString()
-    });
-
-    // ২. মোট পরিশোধিত অর্থের পরিমাণ আপডেট করা
-    bill.paidAmount = (bill.paidAmount || 0) + receivedAmount;
-
-    // ৩. অবশিষ্ট বকেয়া পুনরায় হিসাব করা
-    bill.remainingDue = bill.totalAmount - bill.paidAmount;
-
-    // ৪. স্ট্যাটাস চূড়ান্তভাবে নির্ধারণ করা (সবচেয়ে গুরুত্বপূর্ণ অংশ)
-    if (bill.remainingDue <= 0) {
-        // যদি কোনো বকেয়া না থাকে
-        bill.status = 'paid';
-        bill.isPaid = true;
-        
-        // যদি বিলের চেয়ে বেশি টাকা দেওয়া হয়, তবে অতিরিক্ত টাকা গ্রাহকের অ্যাডভান্স ব্যালেন্সে যোগ হবে
-        if (bill.remainingDue < 0) {
-            customer.advanceBalance = (customer.advanceBalance || 0) + Math.abs(bill.remainingDue);
-            bill.remainingDue = 0; // বকেয়া শূন্য করে দেওয়া
-        }
-    } else {
-        // যদি এখনো বকেয়া থাকে
-        bill.status = 'partially_paid'; // স্ট্যাটাসকে 'partially_paid' হিসেবে রাখা হয়, যা renderBillingTable 'Unpaid' দেখাবে
-        bill.isPaid = false;
-    }
-
-    // ৫. ডেটাবেস সংরক্ষণ এবং কার্যক্রম লগ করা
-    saveDb();
-    addActivity('bill_paid', `${customer.name}-এর বিল পেমেন্ট করা হয়েছে (৳${receivedAmount})`, {
-        customerName: customer.name,
-        amount: receivedAmount,
-        month: bill.month,
-        year: bill.year
-    });
-
-    // ৬. বিলিং পৃষ্ঠা এবং ড্যাশবোর্ড রিফ্রেশ করা
-    renderBillingPage();
-    renderDashboard();
-    
-    alert('পেমেন্ট সফলভাবে জমা হয়েছে!');
-}
-    
     document.addEventListener('DOMContentLoaded', () => {
         const DATABASE_KEY = 'abidNetworkDb_v41'; // Version updated to 4.1
         const LAST_PAGE_KEY = 'abidNetworkLastPage';
@@ -2086,126 +2016,52 @@ function saveDb() {
         }
 
         function migrateDb(data) {
-            // This function can be expanded for future migrations
-            if (!data.routers) data.routers = [];
-            if (!data.locations || data.locations.length === 0) {
-                 data.locations = [...defaultLocations];
+    // This function can be expanded for future migrations
+    if (!data.routers) data.routers = [];
+    if (!data.locations || data.locations.length === 0) {
+        data.locations = [...defaultLocations];
+    }
+
+    if (data.customers) {
+        data.customers.forEach(c => {
+            if (c.macAddress && Array.isArray(c.macAddress)) {
+                c.macAddress = c.macAddress.join(':');
             }
-            
-            // Add default demo routers if none exist
-            if (data.routers.length === 0) {
-                data.routers = [
-                    {
-                        id: 1001,
-                        name: "Main Router",
-                        model: "TP-Link Archer AX3000",
-                        ip: "192.168.1.1",
-                        macAddress: "AA:BB:CC:DD:EE:01",
-                        distanceFeet: 0,
-                        distanceMeters: 0,
-                        powerSpec: "12V 1.5A",
-                        password: "admin123",
-                        location: "অফিস",
-                        image: null
-                    },
-                    {
-                        id: 1002,
-                        name: "Building A Router",
-                        model: "D-Link DIR-825",
-                        ip: "192.168.1.2",
-                        macAddress: "AA:BB:CC:DD:EE:02",
-                        distanceFeet: 100,
-                        distanceMeters: 30.48,
-                        powerSpec: "12V 1A",
-                        password: "router123",
-                        location: "বিল্ডিং এ",
-                        image: "tp-link-ax73.jpg"
-                    },
-                    {
-                        id: 1003,
-                        name: "Building B Router",
-                        model: "TP-Link Archer C7",
-                        ip: "192.168.1.3",
-                        macAddress: "AA:BB:CC:DD:EE:03",
-                        distanceFeet: 150,
-                        distanceMeters: 45.72,
-                        powerSpec: "12V 1.5A",
-                        password: "network456",
-                        location: "বিল্ডিং বি",
-                        image: "netgear-ax12.png"
-                    },
-                    {
-                        id: 1004,
-                        name: "Building C Router",
-                        model: "Netgear Nighthawk AX12",
-                        ip: "192.168.1.4",
-                        macAddress: "AA:BB:CC:DD:EE:04",
-                        distanceFeet: 200,
-                        distanceMeters: 60.96,
-                        powerSpec: "19V 3.16A",
-                        password: "secure789",
-                        location: "বিল্ডিং সি",
-                        image: "netgear-ax12.png"
-                    },
-                    {
-                        id: 1005,
-                        name: "Outdoor Router",
-                        model: "Ubiquiti UniFi Dream Machine",
-                        ip: "192.168.1.5",
-                        macAddress: "AA:BB:CC:DD:EE:05",
-                        distanceFeet: 75,
-                        distanceMeters: 22.86,
-                        powerSpec: "24V 1.5A PoE",
-                        password: "outdoor321",
-                        location: "আউটডোর",
-                        image: "ubiquiti-udm.jpg"
-                    },
-                    {
-                        id: 1006,
-                        name: "Backup Router",
-                        model: "ASUS RT-AX86U",
-                        ip: "192.168.1.6",
-                        macAddress: "AA:BB:CC:DD:EE:06",
-                        distanceFeet: 50,
-                        distanceMeters: 15.24,
-                        powerSpec: "19V 1.75A",
-                        password: "backup654",
-                        location: "ব্যাকআপ রুম",
-                        image: "asus-ax86u.jpg"
-                    },
-                    {
-                        id: 1007,
-                        name: "Guest Network Router",
-                        model: "Linksys Velop MX4200",
-                        ip: "192.168.1.7",
-                        macAddress: "AA:BB:CC:DD:EE:07",
-                        distanceFeet: 120,
-                        distanceMeters: 36.58,
-                        powerSpec: "12V 2A",
-                        password: "guest987",
-                        location: "গেস্ট এরিয়া",
-                        image: "linksys-mx4200.jpg"
-                    }
-                ];
+            if (c.advanceBalance === undefined) {
+                c.advanceBalance = 0;
             }
-            
-            data.customers.forEach(c => {
-                if (c.macAddress && Array.isArray(c.macAddress)) {
-                    c.macAddress = c.macAddress.join(':');
-                }
-                if (c.advanceBalance === undefined) {
-                    c.advanceBalance = 0;
-                }
-            });
-            
-            if(data.bills) {
-                data.bills.forEach(b => {
-                    if(b.adjustments === undefined) b.adjustments = [];
-                    if(b.advanceUsed === undefined) b.advanceUsed = 0;
-                });
+        });
+    }
+
+    // ******************************************************
+    // নতুন এবং গুরুত্বপূর্ণ অংশটি এখানে যোগ করা হয়েছে
+    // ******************************************************
+    if (data.bills) {
+        data.bills.forEach(b => {
+            // যদি পুরনো ব্যাকআপ হয় এবং এই তথ্যগুলো না থাকে
+            if (b.status === undefined) {
+                b.status = b.isPaid ? 'paid' : 'unpaid';
             }
-            return data;
-        }
+            if (b.paidAmount === undefined) {
+                b.paidAmount = b.isPaid ? b.totalAmount : 0;
+            }
+            if (b.remainingDue === undefined) {
+                b.remainingDue = b.isPaid ? 0 : b.totalAmount;
+            }
+            if (b.paymentHistory === undefined) {
+                b.paymentHistory = [];
+            }
+            if (b.adjustments === undefined) {
+                b.adjustments = [];
+            }
+            if (b.advanceUsed === undefined) {
+                b.advanceUsed = 0;
+            }
+        });
+    }
+    
+    return data;
+}
 
         // Activity Management System
         const ACTIVITY_STORAGE_KEY = 'abidNetworkActivities_v1';
@@ -2237,6 +2093,11 @@ function saveDb() {
                 title: 'বিল পরিশোধ',
                 icon: '💰',
                 className: 'bill-paid'
+            },
+            'bill_status_paid': {
+                 title: 'বিল পরিশোধিত',
+                 icon: '✅',
+                 className: 'bill-paid'
             },
             'payment_history': {
                 title: 'আংশিক পেমেন্ট',
@@ -2272,6 +2133,11 @@ function saveDb() {
                 title: 'বকেয়া সমন্বয়',
                 icon: '⚠️',
                 className: 'due-adjustment'
+            },
+            'adjustment_updated': {
+               title: 'সমন্বয় আপডেট',
+               icon: '✏️',
+               className: 'due-adjustment'
             },
             'adjustment_deleted': {
                 title: 'অ্যাডজাস্টমেন্ট মুছে ফেলা',
@@ -2379,61 +2245,81 @@ function saveDb() {
         }
 
         // Render recent activities
-        function renderRecentActivities() {
-            const activities = loadActivities();
-            const container = document.getElementById('recent-activities');
-            const noActivitiesDiv = document.getElementById('no-activities');
 
-            if (!container) return;
+function renderRecentActivities(loadMore = false) {
+    const allActivities = loadActivities();
+    const container = document.getElementById('recent-activities');
+    const noActivitiesDiv = document.getElementById('no-activities');
+    const loaderDiv = document.getElementById('activity-loader');
+    const loadMoreBtn = document.getElementById('load-more-activities-btn');
 
-            if (activities.length === 0) {
-                container.style.display = 'none';
-                noActivitiesDiv.style.display = 'block';
-                return;
+    if (!container) return;
+
+    if (!loadMore) {
+        // যদি প্রথমবার লোড হয়, কন্টেইনার খালি করুন এবং কাউন্টার রিসেট করুন
+        container.innerHTML = '';
+        displayedActivitiesCount = 0;
+    }
+
+    if (allActivities.length === 0) {
+        container.style.display = 'none';
+        noActivitiesDiv.style.display = 'block';
+        loaderDiv.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'grid';
+    noActivitiesDiv.style.display = 'none';
+
+    const startIndex = displayedActivitiesCount;
+    const endIndex = startIndex + ACTIVITIES_PER_PAGE;
+    const activitiesToRender = allActivities.slice(startIndex, endIndex);
+
+    let newActivitiesHtml = activitiesToRender.map(activity => {
+        const config = ACTIVITY_TYPES[activity.type] || ACTIVITY_TYPES['data_backup'];
+        const timeStr = formatActivityTime(activity.timestamp);
+        
+        let metadataHtml = '';
+        if (activity.metadata) {
+            const tags = [];
+            if (activity.metadata.customerName) tags.push(activity.metadata.customerName);
+            if (activity.metadata.amount) tags.push(`৳${toBengaliNumber(activity.metadata.amount)}`);
+            if (activity.metadata.location) tags.push(activity.metadata.location);
+            if (activity.metadata.month !== undefined && activity.metadata.year !== undefined) {
+                const monthName = months[activity.metadata.month];
+                tags.push(`${monthName} ${toBengaliNumber(activity.metadata.year)}`);
             }
-
-            container.style.display = 'grid';
-            noActivitiesDiv.style.display = 'none';
-
-            // Show only the latest 12 activities on dashboard
-            const recentActivities = activities.slice(0, 12);
             
-            container.innerHTML = recentActivities.map(activity => {
-                const config = ACTIVITY_TYPES[activity.type] || ACTIVITY_TYPES['data_backup'];
-                const timeStr = formatActivityTime(activity.timestamp);
-                
-                let metadataHtml = '';
-                if (activity.metadata) {
-                    const tags = [];
-                    if (activity.metadata.customerName) tags.push(activity.metadata.customerName);
-                    if (activity.metadata.amount) tags.push(`৳${toBengaliNumber(activity.metadata.amount)}`);
-                    if (activity.metadata.location) tags.push(activity.metadata.location);
-                    if (activity.metadata.month && activity.metadata.year) {
-                        const monthName = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 
-                                         'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'][activity.metadata.month];
-                        tags.push(`${monthName} ${toBengaliNumber(activity.metadata.year)}`);
-                    }
-                    
-                    if (tags.length > 0) {
-                        metadataHtml = `<div class="activity-metadata">${tags.map(tag => 
-                            `<span class="activity-tag">${tag}</span>`
-                        ).join('')}</div>`;
-                    }
-                }
-
-                return `
-                    <div class="activity-card ${config.className}">
-                        <div class="activity-header">
-                            <div class="activity-icon">${config.icon}</div>
-                            <h3 class="activity-title">${config.title}</h3>
-                            <span class="activity-time">${timeStr}</span>
-                        </div>
-                        <p class="activity-description">${activity.description}</p>
-                        ${metadataHtml}
-                    </div>
-                `;
-            }).join('');
+            if (tags.length > 0) {
+                metadataHtml = `<div class="activity-metadata">${tags.map(tag => 
+                    `<span class="activity-tag">${tag}</span>`
+                ).join('')}</div>`;
+            }
         }
+
+        return `
+            <div class="activity-card ${config.className}">
+                <div class="activity-header">
+                    <div class="activity-icon">${config.icon}</div>
+                    <h3 class="activity-title">${config.title}</h3>
+                    <span class="activity-time">${timeStr}</span>
+                </div>
+                <p class="activity-description">${activity.description}</p>
+                ${metadataHtml}
+            </div>
+        `;
+    }).join('');
+
+    container.insertAdjacentHTML('beforeend', newActivitiesHtml);
+    displayedActivitiesCount += activitiesToRender.length;
+
+    // "আরো দেখুন" বাটনের অবস্থা নিয়ন্ত্রণ
+    if (displayedActivitiesCount < allActivities.length) {
+        loaderDiv.style.display = 'block';
+    } else {
+        loaderDiv.style.display = 'none';
+    }
+}
 
         function saveDb() {
             localStorage.setItem(DATABASE_KEY, JSON.stringify(db));
@@ -2806,6 +2692,56 @@ function saveDb() {
                 select.value = currentValue;
             }
         }
+// ★★★ নতুন বিল রিমাইন্ডার ফাংশন (renderDashboard এর আগে যোগ করুন) ★★★
+
+function checkAndDisplayBillReminder() {
+    const notificationCard = document.getElementById('bill-reminder-notification');
+    const contentWrapper = document.getElementById('bill-reminder-content-wrapper');
+    const viewDueBtn = document.getElementById('view-due-bills-btn');
+
+    if (!notificationCard || !contentWrapper || !viewDueBtn) return;
+
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const DUE_DATE_DAY = 5;
+
+    if (currentDay <= DUE_DATE_DAY) {
+        notificationCard.style.display = 'none';
+        return;
+    }
+
+    const dueBills = db.bills.filter(bill => 
+        bill.year === currentYear &&
+        bill.month === currentMonth &&
+        (bill.status === 'unpaid' || bill.status === 'partially_paid')
+    );
+
+    if (dueBills.length > 0) {
+        const totalDueAmount = dueBills.reduce((sum, bill) => sum + bill.remainingDue, 0);
+        
+        contentWrapper.innerHTML = `
+            <h4 style="margin: 0 0 3px 0; color: #C53030; font-size: 13px; font-weight: 600;">বিল পরিশোধ রিমাইন্ডার</h4>
+            <p style="margin: 0; color: #7B341E; font-size: 11px; line-height: 1.3;">
+                এখনও <strong>${toBengaliNumber(dueBills.length)} জন</strong> গ্রাহকের বিল বকেয়া রয়েছে। 
+                মোট বকেয়া: <strong>৳${toBengaliNumber(totalDueAmount.toFixed(2))}</strong>
+            </p>
+        `;
+
+        viewDueBtn.onclick = () => {
+            switchPage('billing');
+            setTimeout(() => {
+                const unpaidFilterBtn = document.querySelector('#billing .filter-btn[data-filter="unpaid"]');
+                if (unpaidFilterBtn) unpaidFilterBtn.click();
+            }, 100);
+        };
+
+        notificationCard.style.display = 'block';
+    } else {
+        notificationCard.style.display = 'none';
+    }
+}
 
         function renderDashboard() {
             const currentMonth = new Date().getMonth();
@@ -2824,6 +2760,7 @@ function saveDb() {
             
             // Render recent activities
             renderRecentActivities();
+            checkAndDisplayBillReminder();
         }
 
         const customerForm = document.getElementById('customerForm');
@@ -2988,20 +2925,50 @@ function saveDb() {
             switchPage('customers');
         });
 
-        function getCustomerStatus(customer) {
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
-            const lastBill = db.bills.find(b => b.customerId === customer.id && b.year == currentYear && b.month == currentMonth);
+        // এই সম্পূর্ণ নতুন ফাংশনটি আপনার পুরনো getCustomerStatus ফাংশনের জায়গায় বসবে
 
-            if (customer.isFree) return { text: 'ফ্রি', class: 'status-free', sortOrder: 3 };
-            if (customer.advanceBalance > 0) return { text: `অ্যাডভান্স: ৳${toBengaliNumber(customer.advanceBalance.toFixed(2))}`, class: 'status-advance', sortOrder: 2 };
-            if (lastBill) {
-                if (lastBill.isPaid) return { text: 'Paid', class: 'status-paid', sortOrder: 4 };
-                return { text: `বকেয়া: ৳${toBengaliNumber(lastBill.totalAmount.toFixed(2))}`, class: 'status-unpaid', sortOrder: 1 };
+function getCustomerStatus(customer) { // এখানে 'customer' অবজেক্টটিই গ্রহণ করা হচ্ছে
+    if (!customer) return { text: 'Unknown', class: '', sortOrder: 99 };
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const currentBill = db.bills.find(b => 
+        b.customerId === customer.id && // customer.id ব্যবহার করা হচ্ছে
+        b.year === currentYear && 
+        b.month === currentMonth
+    );
+
+    if (customer.isFree) {
+        return { text: 'ফ্রি', class: 'status-free', sortOrder: 4 };
+    }
+
+    if (currentBill) {
+        // --- যদি চলতি মাসের বিল তৈরি হয়ে থাকে ---
+        if (currentBill.status === 'paid') {
+            if (customer.advanceBalance > 0) {
+                return { text: `অ্যাডভান্স: ৳${toBengaliNumber(customer.advanceBalance.toFixed(2))}`, class: 'status-advance', sortOrder: 3 };
             }
-            // If no bill exists for current month, show pending status
-            return { text: 'Pending', class: 'status-pending', sortOrder: 0 };
+            return { text: 'Paid', class: 'status-paid', sortOrder: 5 };
         }
+
+        if (currentBill.status === 'partially_paid') {
+            return { text: `বকেয়া: ৳${toBengaliNumber(currentBill.remainingDue.toFixed(2))}`, class: 'status-unpaid', sortOrder: 2 };
+        }
+
+        // যদি স্ট্যাটাস 'unpaid' হয়
+        return { text: `বকেয়া: ৳${toBengaliNumber(currentBill.remainingDue.toFixed(2))}`, class: 'status-unpaid', sortOrder: 1 };
+
+    } else {
+        // --- যদি চলতি মাসের বিল তৈরি না হয়ে থাকে ---
+        if (customer.advanceBalance > 0) {
+            return { text: `অ্যাডভান্স: ৳${toBengaliNumber(customer.advanceBalance.toFixed(2))}`, class: 'status-advance', sortOrder: 3 };
+        }
+        
+        // বিল তৈরি হয়নি এবং কোনো অ্যাডভান্সও নেই
+        return { text: 'Pending', class: 'status-pending', sortOrder: 6 };
+    }
+}
 
         function renderCustomerListPage(searchTerm = '') {
             const container = document.getElementById('customer-list-by-house');
@@ -3136,7 +3103,9 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
 });
         }
         
-        function renderBillingTable(year, month, searchTerm = '', filter = 'all') {
+// এই নতুন কোডটি আপনার পুরনো renderBillingTable ফাংশনের জায়গায় বসবে
+
+function renderBillingTable(year, month, searchTerm = '', filter = 'all') {
     billingListContainer.innerHTML = '';
     let monthBills = db.bills.filter(b => b.year == year && b.month == month);
 
@@ -3150,9 +3119,9 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
     if (filter === 'unpaid') {
         monthBills = monthBills.filter(b => b.status !== 'paid');
     }
-
-    const statusOrder = { 'unpaid': 1, 'partially_paid': 1, 'paid': 2 };
-    monthBills.sort((a, b) => (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3));
+    // এই নতুন কোডটি মাঝখানে বসবে
+const statusPriority = { 'unpaid': 1, 'partially_paid': 2, 'paid': 3 };
+monthBills.sort((a, b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99));
 
     db.locations.forEach(house => {
         const houseBills = monthBills.filter(bill => {
@@ -3174,21 +3143,29 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
             const customer = db.customers.find(c => c.id === bill.customerId);
             if (!customer) return;
 
-            let statusText, statusClass, dueForDisplay;
-            
             const dueFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
             const finalTotalAmount = bill.monthlyAmount + bill.dueAmount + dueFromAdjustments;
+            
+            let dueForDisplay = 0; // ডিফল্ট মান ০ করা হলো
+            let statusText, statusClass;
 
+            // ******************************************************
+            // নতুন এবং সবচেয়ে গুরুত্বপূর্ণ লজিকটি এখানে
+            // ******************************************************
             if (bill.status === 'paid') {
                 statusText = 'Paid';
                 statusClass = 'status-paid';
-                dueForDisplay = 0;
-            } else {
+                dueForDisplay = 0; // যদি স্ট্যাটাস "Paid" হয়, বকেয়া কলামে সবসময় ০ দেখাবে
+            } else if (bill.status === 'partially_paid') {
+                statusText = 'Partially Paid';
+                statusClass = 'status-partially-paid';
+                dueForDisplay = bill.remainingDue; // আংশিক পেমেন্টের পর বাকি টাকাটাই বকেয়া
+            } else { // Unpaid
                 statusText = 'Unpaid';
                 statusClass = 'status-unpaid';
-                dueForDisplay = finalTotalAmount - (bill.paidAmount || 0);
+                dueForDisplay = bill.dueAmount + dueFromAdjustments; // শুধুমাত্র পূর্বের বকেয়া এবং অ্যাডজাস্টমেন্টের বকেয়া দেখাবে
             }
-
+            
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><a href="#" class="customer-name-link" onclick="openCustomerProfile('${customer.id}')">${customer.name}</a></td>
@@ -3208,6 +3185,7 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
         billingListContainer.appendChild(card);
     });
 
+    // পেমেন্ট বাটনের জন্য ইভেন্ট লিসেনার পুনরায় সেট করা
     document.querySelectorAll('.payment-action-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const billId = event.target.getAttribute('data-bill-id');
@@ -3216,7 +3194,10 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
     });
 }
 
-        function createBillForCustomer(customer, year, month) {
+
+// --- আপনার পুরনো সম্পূর্ণ createBillForCustomer ফাংশনটি মুছে, এই নতুন কোডটি পেস্ট করুন ---
+
+function createBillForCustomer(customer, year, month) {
     if (customer.isFree) return;
 
     const previousMonth = month === 0 ? 11 : month - 1;
@@ -3233,18 +3214,29 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
     let totalAmount = monthlyAmount + dueFromPrevious;
     let status = 'unpaid';
     let advanceUsed = 0;
+    let paidAmount = 0;
+    let remainingDue = totalAmount;
+    let paymentHistoryForBill = []; // ★ নতুন: এই বিলের জন্য পেমেন্ট ইতিহাস
 
+    // অ্যাডভান্স ব্যালেন্স ব্যবহারের নতুন এবং উন্নত লজিক
     if (customer.advanceBalance > 0) {
-        if (customer.advanceBalance >= totalAmount) {
-            advanceUsed = totalAmount;
-            customer.advanceBalance -= totalAmount;
-            totalAmount = 0;
-            status = 'paid';
-        } else {
-            advanceUsed = customer.advanceBalance;
-            totalAmount -= customer.advanceBalance;
-            customer.advanceBalance = 0;
-        }
+        const amountToUseFromAdvance = Math.min(customer.advanceBalance, totalAmount);
+        
+        advanceUsed = amountToUseFromAdvance;
+        customer.advanceBalance -= amountToUseFromAdvance;
+        paidAmount = amountToUseFromAdvance;
+        remainingDue = totalAmount - amountToUseFromAdvance;
+        
+        // ★★★ মূল পরিবর্তন: অ্যাডভান্স ব্যবহারের জন্য ইতিহাসে এন্ট্রি যোগ ★★★
+        paymentHistoryForBill.push({
+            id: Date.now() + Math.random(),
+            amount: amountToUseFromAdvance,
+            date: new Date().toISOString(),
+            source: 'advance', // উৎস: অ্যাডভান্স
+            balanceAfter: remainingDue
+        });
+
+        status = remainingDue <= 0 ? 'paid' : 'partially_paid';
     }
 
     db.bills.push({
@@ -3254,15 +3246,17 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
         month: parseInt(month),
         monthlyAmount: monthlyAmount,
         dueAmount: dueFromPrevious,
-        totalAmount: monthlyAmount + dueFromPrevious,
+        totalAmount: totalAmount,
         status: status,
-        paidAmount: status === 'paid' ? (monthlyAmount + dueFromPrevious) : 0,
-        remainingDue: status === 'unpaid' ? (monthlyAmount + dueFromPrevious) : 0,
+        paidAmount: paidAmount,
+        remainingDue: remainingDue,
         adjustments: [],
         advanceUsed: advanceUsed,
-        isPaid: status === 'paid'
+        isPaid: status === 'paid',
+        paymentHistory: paymentHistoryForBill // ★ নতুন: ইতিহাস যোগ করা হলো
     });
 }
+
 
         generateBillsBtn.addEventListener('click', () => {
             const year = parseInt(document.getElementById('generateYear').value);
@@ -3353,33 +3347,6 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
                 renderDashboard();
             }
         };
-
-        function recalculateBillTotal(billId) {
-    const bill = db.bills.find(b => b.id === billId);
-    if (!bill) return;
-
-    let totalDueFromAdjustments = 0;
-    
-    (bill.adjustments || []).forEach(adj => {
-        if (adj.type === 'due') {
-            totalDueFromAdjustments += adj.amount;
-        }
-    });
-
-    bill.totalAmount = bill.monthlyAmount + bill.dueAmount + totalDueFromAdjustments;
-    bill.remainingDue = bill.totalAmount - (bill.paidAmount || 0);
-
-    if (bill.remainingDue <= 0) {
-        bill.status = 'paid';
-        bill.isPaid = true;
-    } else if ((bill.paidAmount || 0) > 0 && bill.remainingDue > 0) {
-        bill.status = 'partially_paid';
-        bill.isPaid = false;
-    } else {
-        bill.status = 'unpaid';
-        bill.isPaid = false;
-    }
-}
 
         function renderAdjustments(billId) {
             const bill = db.bills.find(b => b.id === billId);
@@ -3472,57 +3439,73 @@ document.querySelectorAll('.payment-action-btn').forEach(button => {
             }
         };
 
-        adjustmentForm.addEventListener('submit', e => {
-            e.preventDefault();
-            const billId = document.getElementById('adjustmentBillId').value;
-            const adjId = document.getElementById('adjustmentId').value;
-            const amount = parseFloat(document.getElementById('adjustmentAmount').value);
-            const type = document.getElementById('adjustmentType').value;
-            const notes = document.getElementById('adjustmentNotes').value;
-            const bill = db.bills.find(b => b.id === billId);
-            const customer = db.customers.find(c => c.id === bill.customerId);
+// এই নতুন কোডটি আপনার পুরনো adjustmentForm.addEventListener এর জায়গায় বসবে
 
-            if (!bill || !customer || amount <= 0) return;
+adjustmentForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const billId = document.getElementById('adjustmentBillId').value;
+    const adjId = document.getElementById('adjustmentId').value;
+    const amount = parseFloat(document.getElementById('adjustmentAmount').value);
+    const type = document.getElementById('adjustmentType').value;
+    const notes = document.getElementById('adjustmentNotes').value;
+    const bill = db.bills.find(b => b.id === billId);
+    const customer = db.customers.find(c => c.id === bill.customerId);
 
-            if (adjId) {
-                const adj = bill.adjustments.find(a => a.id === adjId);
-                // Revert old value before applying new one
-                if (adj.type === 'advance') customer.advanceBalance -= adj.amount;
-                
-                adj.amount = amount;
-                adj.type = type;
-                adj.notes = notes;
-            } else {
-                bill.adjustments.push({
-                    id: Date.now().toString() + Math.random(),
-                    amount, type, notes
-                });
-                
-                // Add activity log for new adjustment
-                const activityType = type === 'advance' ? 'advance_deposit' : 'due_adjustment';
-                const activityDescription = type === 'advance' 
-                    ? `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা করা হয়েছে`
-                    : `${customer.name}-এর বকেয়া সমন্বয় করা হয়েছে`;
-                
-                addActivity(activityType, activityDescription, {
-                    customerName: customer.name,
-                    amount: amount,
-                    notes: notes
-                });
-            }
-            
-            if (type === 'advance') {
-                customer.advanceBalance += amount;
-            }
-            
-            recalculateBillTotal(billId);
-            saveDb();
-            renderAdjustments(billId);
-            renderBillingPage();
-            renderCustomerListPage();
-            resetAdjustmentForm();
-            alert("সমন্বয় সফলভাবে সম্পন্ন হয়েছে!");
+    if (!bill || !customer || amount <= 0) return;
+
+    if (adjId) {
+        const adj = bill.adjustments.find(a => a.id === adjId);
+        if (adj.type === 'advance') customer.advanceBalance -= adj.amount;
+        
+        adj.amount = amount;
+        adj.type = type;
+        adj.notes = notes;
+    } else {
+        bill.adjustments.push({
+            id: Date.now().toString() + Math.random(),
+            amount, type, notes
         });
+        
+        const activityType = type === 'advance' ? 'advance_deposit' : 'due_adjustment';
+        const activityDescription = type === 'advance' 
+            ? `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা করা হয়েছে`
+            : `${customer.name}-এর বকেয়া সমন্বয় করা হয়েছে`;
+        
+        addActivity(activityType, activityDescription, {
+            customerName: customer.name,
+            amount: amount,
+            notes: notes
+        });
+    }
+    
+    // ******************************************************
+    // নতুন এবং সবচেয়ে গুরুত্বপূর্ণ অংশ: অ্যাডভান্স সমন্বয়
+    // ******************************************************
+    if (type === 'advance') {
+        customer.advanceBalance = (customer.advanceBalance || 0) + amount;
+        
+        // বিলের বকেয়া হিসাব পুনরায় করা
+        const dueFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+        const finalTotalAmount = bill.monthlyAmount + bill.dueAmount + dueFromAdjustments;
+        let remainingDue = finalTotalAmount - (bill.paidAmount || 0);
+
+        if (customer.advanceBalance > 0 && remainingDue > 0) {
+            const amountToUse = Math.min(customer.advanceBalance, remainingDue);
+            customer.advanceBalance -= amountToUse;
+            bill.paidAmount += amountToUse;
+            bill.advanceUsed += amountToUse;
+        }
+    }
+    
+    recalculateBillTotal(billId); // এই ফাংশনটি বিলের স্ট্যাটাস আপডেট করবে
+    saveDb();
+    renderAdjustments(billId);
+    renderBillingPage(); // টেবিল রিফ্রেশ করবে
+    renderCustomerListPage();
+    resetAdjustmentForm();
+    alert("সমন্বয় সফলভাবে সম্পন্ন হয়েছে!");
+});
+
 
         document.querySelectorAll('.note-tag').forEach(tag => {
             tag.addEventListener('click', () => {
@@ -3608,41 +3591,79 @@ function openPaymentModal(billId) {
  * পেমেন্ট ইতিহাস প্রদর্শন করে।
  * @param {string} billId - বিলের আইডি।
  */
+// --- আপনার পুরনো সম্পূর্ণ displayPaymentHistory ফাংশনটি মুছে, এই নতুন এবং চূড়ান্ত কোডটি পেস্ট করুন ---
+
 function displayPaymentHistory(billId) {
     const bill = db.bills.find(b => b.id === billId);
     const historyContainer = document.getElementById('payment-history-list');
     
-    if (!bill || !bill.paymentHistory || bill.paymentHistory.length === 0) {
+    if (!bill || !bill.paymentHistory || !bill.paymentHistory.length) {
         historyContainer.innerHTML = '<div class="payment-history-empty">কোনো পেমেন্ট ইতিহাস পাওয়া যায়নি</div>';
         return;
     }
 
-    // Sort payment history by date (newest first)
+    // CSS স্টাইল (চূড়ান্ত সংস্করণ)
+    const styles = `
+        .payment-history-item-final-v3 { background: #F7FAFC; border: 1px solid #E2E8F0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; }
+        .ph-source-final-v3 { font-size: 11px; font-weight: 600; color: var(--primary-color); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
+        .ph-amount-final-v3 { font-size: 18px; font-weight: 700; color: var(--paid-color); margin-bottom: 4px; }
+        .ph-date-final-v3 { font-size: 10px; color: #718096; display: flex; align-items: center; gap: 5px; }
+        .ph-status-line-final-v3 { margin-top: 5px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+        .ph-status-line-final-v3 .due { font-style: italic; color: #718096; }
+        .ph-status-line-final-v3 .final-payment { font-weight: 600; color: var(--paid-color); }
+        .ph-status-line-final-v3 .new-advance, .ph-status-line-final-v3 .total-advance { font-weight: 600; color: var(--advance-color); }
+    `;
+    if (!document.getElementById('payment-history-styles-final-v3')) {
+        const styleSheet = document.createElement("style");
+        styleSheet.id = 'payment-history-styles-final-v3';
+        styleSheet.innerText = styles;
+        document.head.appendChild(styleSheet);
+    }
+
     const sortedHistory = bill.paymentHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
     
-    let historyHTML = '';
-    sortedHistory.forEach(payment => {
+    let historyHTML = sortedHistory.map(payment => {
         const paymentDate = new Date(payment.date);
-        const formattedDate = paymentDate.toLocaleDateString('bn-BD', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        historyHTML += `
-            <div class="payment-history-item">
-                <div>
-                    <div class="payment-history-amount">৳${toBengaliNumber(payment.amount.toFixed(2))}</div>
-                    <div class="payment-history-date">${formattedDate}</div>
-                </div>
+        const formattedDate = paymentDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        let sourceText;
+        if (payment.source === 'manual') sourceText = '👤 ম্যানুয়াল পেমেন্ট';
+        else if (payment.source === 'advance') sourceText = '💳 অ্যাডভান্স থেকে সমন্বয়';
+        else if (payment.source === 'advance_deposit') sourceText = '✨ সরাসরি অ্যাডভান্স জমা';
+        else sourceText = 'অজানা উৎস';
+
+        let statusLinesHTML = '';
+
+        // ★★★ আপনার নতুন ফিচারের চূড়ান্ত প্রদর্শন যুক্তি ★★★
+        if (payment.isFinalPayment) {
+            statusLinesHTML += `<div class="final-payment">✅ বিলটি এই পেমেন্টের মাধ্যমে সম্পূর্ণ পরিশোধিত হয়েছে।</div>`;
+            if (payment.newAdvance > 0) {
+                statusLinesHTML += `<div class="new-advance">✨ এবং ৳${toBengaliNumber(payment.newAdvance.toFixed(2))} নতুন অ্যাডভান্স হিসেবে জমা হয়েছে।</div>`;
+            }
+        } else if (payment.source === 'advance_deposit') {
+            const totalAdvance = Math.abs(payment.balanceAfter);
+            if (payment.isFirstAdvance) {
+                statusLinesHTML += `<div class="new-advance">✨ নতুন অ্যাডভান্স জমা হয়েছে: ৳${toBengaliNumber(totalAdvance.toFixed(2))}</div>`;
+            } else {
+                statusLinesHTML += `<div class="total-advance">📈 মোট অ্যাডভান্স এখন: ৳${toBengaliNumber(totalAdvance.toFixed(2))}</div>`;
+            }
+        } else if (payment.balanceAfter > 0) {
+            statusLinesHTML += `<div class="due">📉 পেমেন্টের পর বকেয়া: ৳${toBengaliNumber(payment.balanceAfter.toFixed(2))}</div>`;
+        }
+
+        return `
+            <div class="payment-history-item-final-v3">
+                <div class="ph-source-final-v3">${sourceText}</div>
+                <div class="ph-amount-final-v3">৳${toBengaliNumber(payment.amount.toFixed(2))}</div>
+                <div class="ph-date-final-v3">🗓️ ${formattedDate}</div>
+                <div class="ph-status-line-final-v3">${statusLinesHTML}</div>
             </div>
         `;
-    });
+    }).join('');
     
     historyContainer.innerHTML = historyHTML;
 }
+
 
 /**
  * পেমেন্ট মোডাল এবং ওভারলে বন্ধ করে।
@@ -4213,20 +4234,6 @@ function closePaymentModal() {
                         </thead>
                         <tbody>
                 `;
-                customerBills.forEach(bill => {
-                    const statusText = bill.isPaid ? 'পরিশোধিত' : 'বকেয়া';
-                    const statusColor = bill.isPaid ? '#38A169' : '#DD6B20';
-                    billingHistoryHtml += `
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd;">${months[bill.month]}, ${toBengaliNumber(bill.year)}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">৳${toBengaliNumber(bill.monthlyAmount.toFixed(2))}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">৳${toBengaliNumber(bill.dueAmount.toFixed(2))}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">৳${toBengaliNumber(bill.advanceUsed.toFixed(2))}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">৳${toBengaliNumber(bill.totalAmount.toFixed(2))}</td>
-                            <td style="padding: 10px; border: 1px solid #ddd; color: ${statusColor}; font-weight: 600;">${statusText}</td>
-                        </tr>
-                    `;
-                });
                 billingHistoryHtml += `
                         </tbody>
                     </table>
@@ -4607,71 +4614,88 @@ function closePaymentModal() {
         const importInput = document.getElementById('import-file-input');
         const resetBtn = document.getElementById('reset-app-btn');
 
-        exportBtn.addEventListener('click', () => {
-    // ধাপ ১: সাম্প্রতিক কার্যক্রমের ডেটা লোড করুন
-    const activities = loadActivities(); // আপনার সিস্টেমে এই ফাংশনটি আগে থেকেই আছে
+        // পুরনো exportBtn.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
 
-    // ধাপ ২: মূল ডেটা (db) এবং কার্যক্রম (activities) একসাথে একটি অবজেক্টে রাখুন
+exportBtn.addEventListener('click', () => {
     const fullBackupData = {
         db: db,
-        activities: activities
+        activities: loadActivities()
     };
-
-    // ধাপ ৩: এই নতুন অবজেক্টটিকে JSON স্ট্রিং-এ পরিণত করুন
-    const dataStr = JSON.stringify(fullBackupData, null, 2); // এখন fullBackupData এক্সপোর্ট হচ্ছে
-
+    const dataStr = JSON.stringify(fullBackupData, null, 2);
     const dataBlob = new Blob([dataStr], {type: 'application/json'});
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
+    const fileName = `abid_network_full_backup_${new Date().toISOString().split('T')[0]}.json`;
     link.href = url;
-    link.download = `abid_network_full_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
             
-            // Save last export date
-            const now = new Date();
-            const bengaliDate = now.toLocaleDateString('bn-BD', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            localStorage.setItem('lastExportDate', bengaliDate);
-            updateLastExportDate();
-            hideBackupReminder();
-        });
+    // ======================================================
+    // ডেটা এক্সপোর্টের জন্য নতুন লগ
+    // ======================================================
+    addActivity('data_backup', 'সিস্টেমের সকল ডেটা ব্যাকআপ নেওয়া হয়েছে', {
+        fileName: fileName
+    });
+    // ======================================================
+            
+    const now = new Date();
+    const bengaliDate = now.toLocaleDateString('bn-BD', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+    localStorage.setItem('lastExportDate', bengaliDate);
+    updateLastExportDate();
+    hideBackupReminder();
+    renderDashboard(); // ড্যাশবোর্ড রিফ্রেশ করে নতুন লগ দেখানোর জন্য
+});
 
         importBtn.addEventListener('click', () => importInput.click());
-        importInput.addEventListener('change', (event) => {
+// পুরনো importInput.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+
+importInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const importedData = JSON.parse(e.target.result);
+            let dbToLoad, activitiesToLoad = [];
 
-            // নতুন: ফাইলটিতে db এবং activities দুটোই আছে কিনা তা পরীক্ষা করা হচ্ছে
             if (importedData.db && importedData.activities) {
-                if (confirm('আপনি কি নিশ্চিতভাবে এই ডেটা ইমপোর্ট করতে চান? বর্তমান সকল ডেটা এবং কার্যক্রম মুছে নতুন ডেটা যোগ করা হবে।')) {
-                    // ধাপ ১: মূল ডেটা পুনরুদ্ধার করুন
-                    db = migrateDb(importedData.db);
-                    saveDb();
-
-                    // ধাপ ২: সাম্প্রতিক কার্যক্রম পুনরুদ্ধার করুন
-                    saveActivities(importedData.activities);
-
-                    alert('ডেটা এবং কার্যক্রম সফলভাবে ইমপোর্ট করা হয়েছে।');
-                    location.reload();
-                }
+                dbToLoad = importedData.db;
+                activitiesToLoad = importedData.activities;
+            } else if (importedData.customers && importedData.bills) {
+                dbToLoad = importedData;
             } else {
-                // পুরনো ব্যাকআপ ফাইলের জন্য একটি বার্তা
-                alert('ফাইলটি সঠিক ফরম্যাটে নেই। এটি একটি পুরনো ব্যাকআপ হতে পারে যা সমর্থিত নয়।');
+                alert('ফাইলটির ফরম্যাট বোঝা যাচ্ছে না। এটি একটি অবৈধ ফাইল।');
+                event.target.value = '';
+                return;
+            }
+
+            if (confirm('আপনি কি নিশ্চিতভাবে এই ডেটা ইমপোর্ট করতে চান? বর্তমান সকল ডেটা মুছে নতুন ডেটা যোগ করা হবে।')) {
+                db = migrateDb(dbToLoad);
+                saveDb();
+                saveActivities(activitiesToLoad);
+
+                // ======================================================
+                // ডেটা ইমপোর্টের জন্য নতুন লগ
+                // ======================================================
+                addActivity('data_import', 'ব্যাকআপ ফাইল থেকে ডেটা পুনরুদ্ধার করা হয়েছে', {
+                    fileName: file.name
+                });
+                // ======================================================
+
+                alert('ডেটা সফলভাবে ইমপোর্ট করা হয়েছে।');
+                location.reload();
             }
         } catch (err) {
-            alert('ভুল ফাইল ফরম্যাট। অনুগ্রহ করে একটি সঠিক JSON ফাইল নির্বাচন করুন।');
+            console.error("Import failed:", err);
+            alert('ভুল ফাইল ফরম্যাট বা ফাইলটি পড়তে সমস্যা হয়েছে।');
+        } finally {
+            event.target.value = '';
         }
     };
     reader.readAsText(file);
-    event.target.value = '';
 });
 
         resetBtn.addEventListener('click', () => {
@@ -4693,6 +4717,12 @@ function closePaymentModal() {
         location.reload(); // পেজটি রিলোড করে পরিবর্তন দেখাবে
     }
 });
+const loadMoreBtn = document.getElementById('load-more-activities-btn');
+if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+        renderRecentActivities(true);
+    });
+}
 
         function setFooterYear() {
             const yearSpan = document.getElementById('footer-year');
@@ -4705,53 +4735,25 @@ function closePaymentModal() {
         const customerProfileModal = document.getElementById('customerProfileModal');
         const customerProfileModalClose = document.getElementById('customer-profile-modal-close');
 
-        function getCustomerFinancialStatus(customerId) {
-            const customer = db.customers.find(c => c.id === customerId);
-            if (!customer) return null;
+        // এই নতুন এবং চূড়ান্ত কোডটি আপনার পুরনো getCustomerFinancialStatus ফাংশনের জায়গায় বসবে
 
-            // Check if customer has any bills
-            const customerBills = db.bills.filter(b => b.customerId === customerId);
-            
-            // If no bills exist for this customer
-            if (customerBills.length === 0) {
-                // Check if customer has advance or due from adjustments
-                if (customer.advanceBalance > 0) {
-                    return {
-                        label: 'এডভান্স',
-                        value: `৳${toBengaliNumber(customer.advanceBalance.toFixed(2))}`,
-                        color: 'var(--advance-color)'
-                    };
-                }
-                
-                // Check for manual adjustments (previous due)
-                let totalManualDue = 0;
-                customerBills.forEach(bill => {
-                    if (bill.adjustments) {
-                        bill.adjustments.forEach(adj => {
-                            if (adj.type === 'due') {
-                                totalManualDue += adj.amount;
-                            }
-                        });
-                    }
-                });
-                
-                if (totalManualDue > 0) {
-                    return {
-                        label: 'পূর্বের বকেয়া',
-                        value: `৳${toBengaliNumber(totalManualDue.toFixed(2))}`,
-                        color: 'var(--unpaid-color)'
-                    };
-                }
-                
-                // New customer with no bills and no adjustments
-                return {
-                    label: 'স্ট্যাটাস',
-                    value: 'বিল তৈরি হয়নি',
-                    color: '#6B7280'
-                };
-            }
+function getCustomerFinancialStatus(customerId) {
+    const customer = db.customers.find(c => c.id === customerId);
+    if (!customer) return null;
 
-            // Customer has bills - check advance balance first
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    const currentBill = db.bills.find(b => 
+        b.customerId === customerId && 
+        b.year === currentYear && 
+        b.month === currentMonth
+    );
+
+    if (currentBill) {
+        // --- যদি চলতি মাসের বিল তৈরি হয়ে থাকে ---
+
+        if (currentBill.status === 'paid') {
             if (customer.advanceBalance > 0) {
                 return {
                     label: 'বর্তমান অ্যাডভান্স',
@@ -4759,40 +4761,61 @@ function closePaymentModal() {
                     color: 'var(--advance-color)'
                 };
             }
+            return { label: 'স্ট্যাটাস', value: 'পরিশোধিত', color: 'var(--paid-color)' };
+        }
 
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
-            
-            const currentBill = db.bills.find(b => b.customerId === customerId && b.year === currentYear && b.month === currentMonth);
-            
-            let totalPreviousDue = 0;
-            if (currentBill) {
-                totalPreviousDue = currentBill.dueAmount;
-            } else {
-                // If no bill for current month, find the last unpaid bill
-                const sortedBills = customerBills.sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month));
-                const lastBill = sortedBills[0];
-                if (lastBill && !lastBill.isPaid) {
-                    totalPreviousDue = lastBill.totalAmount;
-                }
-            }
+        // *****************************************************************
+        // আপনার রিপোর্ট করা সমস্যার চূড়ান্ত সমাধানটি এখানে করা হয়েছে
+        // *****************************************************************
+        // ধাপ ২: বিল পরিশোধিত না হলে, প্রথমে অ্যাডজাস্টমেন্ট থেকে আসা বকেয়া চেক করা হবে
+        const dueFromAdjustments = (currentBill.adjustments || [])
+            .filter(adj => adj.type === 'due')
+            .reduce((sum, adj) => sum + adj.amount, 0);
 
-            if (totalPreviousDue > 0) {
-                return {
-                    label: 'পূর্বের বকেয়া',
-                    value: `৳${toBengaliNumber(totalPreviousDue.toFixed(2))}`,
-                    color: 'var(--unpaid-color)'
-                };
-            }
+        // মোট পূর্বের বকেয়া = (বিল তৈরির সময়কার বকেয়া + অ্যাডজাস্টমেন্টের বকেয়া)
+        const totalPreviousDue = (currentBill.dueAmount || 0) + dueFromAdjustments;
 
-            // Customer has bills but no due or advance
+        if (totalPreviousDue > 0 && currentBill.paidAmount === 0) {
+            // যদি কোনো পেমেন্ট না করা হয় এবং পুরনো বকেয়া থাকে
             return {
-                label: 'স্ট্যাটাস',
-                value: 'বকেয়া বা অ্যাডভান্স নেই',
-                color: 'var(--paid-color)'
+                label: 'পূর্বের বকেয়া',
+                value: `৳${toBengaliNumber(totalPreviousDue.toFixed(2))}`,
+                color: 'var(--unpaid-color)'
+            };
+        }
+        
+        if (currentBill.paidAmount > 0 && currentBill.remainingDue > 0) {
+            // যদি আংশিক পেমেন্ট করা হয়ে থাকে
+            return {
+                label: 'বর্তমান বকেয়া',
+                value: `৳${toBengaliNumber(currentBill.remainingDue.toFixed(2))}`,
+                color: 'var(--unpaid-color)'
             };
         }
 
+        // যদি উপরের কোনোটিই না হয়, তার মানে এটি শুধুমাত্র চলতি মাসের নতুন বিল
+        return {
+            label: 'স্ট্যাটাস',
+            value: 'বিল প্রস্তুত',
+            color: '#6B7280'
+        };
+
+    } else {
+        // --- যদি চলতি মাসের বিল তৈরি না হয়ে থাকে ---
+        if (customer.advanceBalance > 0) {
+            return {
+                label: 'বর্তমান অ্যাডভান্স',
+                value: `৳${toBengaliNumber(customer.advanceBalance.toFixed(2))}`,
+                color: 'var(--advance-color)'
+            };
+        }
+        return {
+            label: 'স্ট্যাটাস',
+            value: 'বিল তৈরি হয়নি',
+            color: '#6B7280'
+        };
+    }
+}
 
         window.openCustomerProfile = (customerId) => {
             const customer = db.customers.find(c => c.id === customerId);
@@ -4830,28 +4853,36 @@ function closePaymentModal() {
                 billingHistoryContainer.innerHTML = '<li>কোনো বিলের ইতিহাস পাওয়া যায়নি।</li>';
             } else {
                 customerBills.forEach(bill => {
-                    const li = document.createElement('li');
-                    li.className = 'profile-billing-item';
-                    let statusClass, statusText;
-                    
-                    if (bill.status === 'paid') {
-                        statusClass = 'status-paid';
-                        statusText = 'পরিশোধিত';
-                    } else if (bill.status === 'partially_paid') {
-                        statusClass = 'status-partially-paid';
-                        statusText = `আংশিক (৳${toBengaliNumber((bill.remainingDue || 0).toFixed(2))} বাকি)`;
-                    } else {
-                        statusClass = bill.isPaid ? 'status-paid' : 'status-unpaid';
-                        statusText = bill.isPaid ? 'পরিশোধিত' : 'বকেয়া';
-                    }
-                    
-                    li.innerHTML = `
-                        <span class="month">${months[bill.month]}, ${toBengaliNumber(bill.year)}</span>
-                        <span class="amount">মোট: ৳${toBengaliNumber(bill.totalAmount.toFixed(2))}</span>
-                        <span class="status ${statusClass}">${statusText}</span>
-                    `;
-                    billingHistoryContainer.appendChild(li);
-                });
+    const li = document.createElement('li');
+    li.className = 'profile-billing-item';
+    
+    let statusClass, statusText;
+    
+    // স্ট্যাটাস নির্ধারণের জন্য সঠিক এবং নতুন লজিক
+    if (bill.status === 'paid') {
+        statusClass = 'status-paid';
+        statusText = 'পরিশোধিত';
+    } else if (bill.status === 'partially_paid') {
+        statusClass = 'status-partially-paid';
+        // আংশিক পরিশোধিত হলে, শুধুমাত্র বাকি টাকাটাই দেখানো হবে
+        statusText = `আংশিক (৳${toBengaliNumber((bill.remainingDue || 0).toFixed(2))} বাকি)`;
+    } else { // 'unpaid'
+        statusClass = 'status-unpaid';
+        statusText = 'বকেয়া';
+    }
+    
+    // মোট বিল সঠিকভাবে প্রদর্শন
+    const totalAmountForDisplay = bill.monthlyAmount + (bill.dueAmount || 0) + 
+        ((bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0));
+
+    li.innerHTML = `
+        <span class="month">${months[bill.month]}, ${toBengaliNumber(bill.year)}</span>
+        <span class="amount">মোট: ৳${toBengaliNumber(totalAmountForDisplay.toFixed(2))}</span>
+        <span class="status ${statusClass}">${statusText}</span>
+    `;
+    billingHistoryContainer.appendChild(li);
+});
+
             }
 
 
@@ -4907,7 +4938,286 @@ function closePaymentModal() {
         
         const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
         switchPage(lastPage, true);
+// --- এই ফাংশনটি খুঁজে বের করে প্রতিস্থাপন করুন ---
+
+function submitPayment() {
+    const receivedAmountInput = document.getElementById('payment-amount-input');
+    const receivedAmount = parseFloat(receivedAmountInput.value);
+
+    if (isNaN(receivedAmount) || receivedAmount <= 0) {
+        alert('অনুগ্রহ করে একটি বৈধ টাকার পরিমাণ লিখুন!');
+        return;
+    }
+
+    if (!currentPaymentBillId) {
+        alert('ত্রুটি: বিল আইডি পাওয়া যায়নি!');
+        return;
+    }
+
+    const bill = db.bills.find(b => b.id === currentPaymentBillId);
+    const customer = db.customers.find(c => c.id === bill.customerId);
+    
+    // --- সঠিক সমাধান: অ্যাডভান্সের হিসাবটি পেমেন্টের *আগে* এবং *পরে* সঠিকভাবে করা ---
+    
+    // ধাপ ১: পেমেন্টের আগের অ্যাডভান্স ব্যালেন্স সংরক্ষণ করা
+    const advanceBeforePayment = customer.advanceBalance || 0;
+
+    // ধাপ ২: পেমেন্ট প্রক্রিয়া সম্পন্ন করা (এই ফাংশনটি customer.advanceBalance আপডেট করবে)
+    logPayment(currentPaymentBillId, receivedAmount);
+
+    // ধাপ ৩: পেমেন্টের পরের অ্যাডভান্স ব্যালেন্স আবার পড়া
+    const advanceAfterPayment = customer.advanceBalance || 0;
+
+    // ধাপ ৪: নতুন কত টাকা অ্যাডভান্স জমা হলো, তা হিসাব করা
+    const newAdvanceGenerated = advanceAfterPayment - advanceBeforePayment;
+
+    // --- লগ তৈরির জন্য চূড়ান্ত যুক্তি ---
+    let activityType = '';
+    let activityDescription = '';
+
+    if (newAdvanceGenerated > 0) {
+        // যদি নতুন অ্যাডভান্স তৈরি হয়, তাহলে দুটি লগ তৈরি হবে:
+        // ১. বিল পরিশোধের লগ
+        addActivity('bill_paid', `<strong>${customer.name}</strong>-এর বিল সম্পূর্ণ পরিশোধ হয়েছে।`, {
+            customerName: customer.name,
+            amount: receivedAmount,
+            month: bill.month,
+            year: bill.year
+        });
+        // ২. অ্যাডভান্স জমার লগ
+        addActivity('advance_deposit', `<strong>${customer.name}</strong>-এর অ্যাকাউন্টে <strong>৳${toBengaliNumber(newAdvanceGenerated.toFixed(2))}</strong> অ্যাডভান্স জমা হয়েছে।`, {
+            customerName: customer.name,
+            amount: newAdvanceGenerated
+        });
+
+    } else if (bill.status === 'paid') {
+        // যদি শুধু বিল পরিশোধ হয় (কোনো নতুন অ্যাডভান্স ছাড়া)
+        activityDescription = `<strong>${customer.name}</strong>-এর বিল সম্পূর্ণ পরিশোধ হয়েছে।`;
+        activityType = 'bill_paid';
+    } else if (bill.status === 'partially_paid') {
+        // যদি বিল আংশিক পরিশোধ হয়
+        activityDescription = `<strong>${customer.name}</strong>-এর বিল আংশিক পরিশোধ হয়েছে।`;
+        activityType = 'payment_history';
+    }
+
+    // শুধুমাত্র একটি লগ তৈরি করার প্রয়োজন হলে, এই কোডটি চলবে
+    if (activityDescription && newAdvanceGenerated <= 0) {
+        addActivity(activityType, activityDescription, {
+            customerName: customer.name,
+            amount: receivedAmount,
+            month: bill.month,
+            year: bill.year
+        });
+    }
+    // --- নতুন যুক্তি শেষ ---
+
+    closePaymentModal();
+    renderBillingPage();
+    renderDashboard();
+
+    alert('পেমেন্ট সফলভাবে জমা হয়েছে!');
+}
+
+    /**
+     * পেমেন্ট মোডাল এবং ওভারলে বন্ধ করে।
+     */
+    function closePaymentModal() {
+        document.getElementById('paymentModal').classList.remove('active');
+        document.getElementById('overlay').style.display = 'none';
+        currentPaymentBillId = null; // বিল আইডি রিসেট করা
+    }
+        // --- আপনার পুরনো সম্পূর্ণ recalculateBillTotal ফাংশনটি মুছে, এই নতুন কোডটি পেস্ট করুন ---
+
+function recalculateBillTotal(billId) {
+    const bill = db.bills.find(b => b.id === billId);
+    if (!bill) return;
+
+    const customer = db.customers.find(c => c.id === bill.customerId);
+    if (!customer) return;
+
+    // ধাপ ১: বিলের মোট পরিমাণ গণনা
+    const dueFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+    const grossTotalBill = bill.monthlyAmount + bill.dueAmount + dueFromAdjustments;
+
+    // ধাপ ২: মোট পরিশোধিত পরিমাণ গণনা
+    bill.paidAmount = (bill.paymentHistory || []).reduce((sum, p) => sum + p.amount, 0);
+
+    // ধাপ ৩: বকেয়া এবং অতিরিক্ত পেমেন্ট হিসাব করা
+    let remainingDue = grossTotalBill - bill.paidAmount;
+    
+    // ★★★ মূল এবং চূড়ান্ত পরিবর্তন এখানে ★★★
+    if (remainingDue < 0) {
+        // যদি বিলের চেয়ে বেশি টাকা পরিশোধ করা হয়
+        const newAdvance = Math.abs(remainingDue); // অতিরিক্ত টাকা
+        customer.advanceBalance = (customer.advanceBalance || 0) + newAdvance;
+        remainingDue = 0; // বকেয়া শূন্য হয়ে যাবে
+    }
+    
+    bill.totalAmount = grossTotalBill;
+    bill.remainingDue = remainingDue;
+
+    // ধাপ ৪: বিলের স্ট্যাটাস নির্ধারণ
+    if (bill.remainingDue <= 0) {
+        bill.status = 'paid';
+        bill.isPaid = true;
+    } else if (bill.paidAmount > 0) {
+        bill.status = 'partially_paid';
+        bill.isPaid = false;
+    } else {
+        bill.status = 'unpaid';
+        bill.isPaid = false;
+    }
+}
+// --- আপনার পুরনো সম্পূর্ণ logPayment ফাংশনটি মুছে, এই নতুন এবং চূড়ান্ত কোডটি পেস্ট করুন ---
+
+function logPayment(billId, receivedAmount) {
+    const billIndex = db.bills.findIndex(b => b.id === billId);
+    if (billIndex === -1) return false;
+
+    const bill = db.bills[billIndex];
+    const customer = db.customers.find(c => c.id === bill.customerId);
+    if (!customer) return false;
+
+    if (!bill.paymentHistory) bill.paymentHistory = [];
+
+    const dueBeforeThisPayment = bill.remainingDue > 0 ? bill.remainingDue : 0;
+
+    // ★★★ আপনার নতুন ফিচারের মূল যুক্তি এখানে ★★★
+    // যদি বিল আগে থেকেই পরিশোধিত থাকে, তাহলে এটি সরাসরি অ্যাডভান্স জমা
+    if (dueBeforeThisPayment <= 0) {
+        const advanceBeforeThisPayment = customer.advanceBalance || 0;
+        const isFirstAdvance = advanceBeforeThisPayment === 0; // এটিই প্রথম অ্যাডভান্স কি না, তা পরীক্ষা করা হচ্ছে
+
+        customer.advanceBalance += receivedAmount;
         
+        bill.paymentHistory.push({
+            id: Date.now() + Math.random(),
+            amount: receivedAmount,
+            date: new Date().toISOString(),
+            source: 'advance_deposit',
+            balanceAfter: -customer.advanceBalance, // মোট অ্যাডভান্সকে ঋণাত্মকভাবে দেখানো হয়
+            isFirstAdvance: isFirstAdvance // নতুন তথ্যটি যোগ করা হলো
+        });
+        
+        saveDb();
+        addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা হয়েছে`, {
+            customerName: customer.name,
+            amount: receivedAmount
+        });
+        return true; // ফাংশন এখানেই শেষ
+    }
+
+    // সাধারণ পেমেন্ট প্রক্রিয়াকরণ (যদি বিল বকেয়া থাকে)
+    const balanceAfterPayment = dueBeforeThisPayment - receivedAmount;
+    let isFinalPayment = false;
+    let newAdvanceFromThisPayment = 0;
+
+    if (balanceAfterPayment <= 0) {
+        isFinalPayment = true;
+        if (balanceAfterPayment < 0) {
+            newAdvanceFromThisPayment = Math.abs(balanceAfterPayment);
+        }
+    }
+
+    bill.paymentHistory.push({
+        id: Date.now() + Math.random(),
+        amount: receivedAmount,
+        date: new Date().toISOString(),
+        source: 'manual',
+        balanceAfter: balanceAfterPayment,
+        isFinalPayment: isFinalPayment,
+        newAdvance: newAdvanceFromThisPayment
+    });
+
+    bill.paidAmount = (bill.paidAmount || 0) + receivedAmount;
+    
+    recalculateBillTotal(billId);
+    saveDb();
+    
+    addActivity('bill_paid', `${customer.name}-এর বিল পেমেন্ট করা হয়েছে`, {
+        customerName: customer.name,
+        amount: receivedAmount,
+        month: bill.month,
+        year: bill.year
+    });
+
+    return true;
+}
+
+function recalculateBillTotal(billId) {
+    const bill = db.bills.find(b => b.id === billId);
+    if (!bill) return;
+
+    const customer = db.customers.find(c => c.id === bill.customerId);
+    if (!customer) return;
+
+    // ধাপ ১: সকল প্রকার বকেয়া এবং অ্যাডভান্স গণনা
+    const dueFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+    const advanceFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'advance').reduce((sum, a) => sum + a.amount, 0);
+    
+    // ধাপ ২: গ্রাহকের মোট অ্যাডভান্স ব্যালেন্স নির্ধারণ
+    // এটি হবে তার আগের মাসের বিল থেকে আসা অ্যাডভান্স এবং এই মাসে যোগ করা অ্যাডভান্সের যোগফল
+    customer.advanceBalance = (customer.initialAdvanceForMonth || 0) + advanceFromAdjustments;
+
+    // ধাপ ৩: মোট বিল এবং মোট পরিশোধিত পরিমাণ নির্ধারণ
+    const grossTotalBill = bill.monthlyAmount + bill.dueAmount + dueFromAdjustments;
+    const totalPaidFromPayments = (bill.paymentHistory || []).reduce((sum, p) => sum + p.amount, 0);
+
+    // ধাপ ৪: অ্যাডভান্স থেকে বিল সমন্বয় করা
+    let remainingBillAfterAdvance = grossTotalBill;
+    let advanceUsedThisBill = 0;
+    if (customer.advanceBalance > 0) {
+        const amountToUseFromAdvance = Math.min(customer.advanceBalance, remainingBillAfterAdvance);
+        remainingBillAfterAdvance -= amountToUseFromAdvance;
+        advanceUsedThisBill = amountToUseFromAdvance;
+    }
+    
+    // ধাপ ৫: পেমেন্ট থেকে বিল সমন্বয় করা
+    let finalRemainingDue = remainingBillAfterAdvance - totalPaidFromPayments;
+    
+    // ধাপ ৬: চূড়ান্ত অ্যাডভান্স ব্যালেন্স গণনা
+    let finalAdvanceBalance = customer.advanceBalance - advanceUsedThisBill;
+    if (finalRemainingDue < 0) {
+        // যদি বিলের চেয়ে বেশি টাকা পরিশোধ করা হয়, তা নতুন অ্যাডভান্স হিসেবে যোগ হবে
+        finalAdvanceBalance += Math.abs(finalRemainingDue);
+        finalRemainingDue = 0;
+    }
+
+    // ধাপ ৭: ডেটাবেসে চূড়ান্ত মানগুলো সেভ করা
+    bill.totalAmount = grossTotalBill;
+    bill.paidAmount = totalPaidFromPayments + advanceUsedThisBill;
+    bill.remainingDue = finalRemainingDue;
+    bill.advanceUsed = advanceUsedThisBill;
+    customer.advanceBalance = finalAdvanceBalance;
+
+    // ধাপ ৮: বিলের স্ট্যাটাস নির্ধারণ করা
+    if (bill.remainingDue <= 0) {
+        bill.status = 'paid';
+        bill.isPaid = true;
+    } else if (bill.paidAmount > 0) {
+        bill.status = 'partially_paid';
+        bill.isPaid = false;
+    } else {
+        bill.status = 'unpaid';
+        bill.isPaid = false;
+    }
+}
+
+  // পেমেন্ট মোডালের বাটনগুলোর জন্য ইভেন্ট লিসেনার যোগ করা
+const submitPaymentBtn = document.getElementById('submit-payment-btn');
+const closeModalBtn = document.querySelector('.payment-modal-close');
+const cancelModalBtn = document.querySelector('.payment-btn-cancel');
+
+if (submitPaymentBtn) {
+    submitPaymentBtn.addEventListener('click', submitPayment);
+}
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', closePaymentModal);
+}
+if (cancelModalBtn) {
+    cancelModalBtn.addEventListener('click', closePaymentModal);
+}
+     
         // Initialize version management
         initializeVersionManagement();
     });
@@ -5120,17 +5430,6 @@ function closePaymentModal() {
         updateLastExportDate();
     });
 
-    // Payment Modal Functions
-    
-    // পেমেন্ট মোডালের "জমা দিন" বাটনের জন্য ইভেন্ট লিসেনার সেট করা
-    document.addEventListener('DOMContentLoaded', function() {
-        const submitPaymentBtn = document.getElementById('submit-payment-btn');
-        if (submitPaymentBtn) {
-            submitPaymentBtn.addEventListener('click', submitPayment);
-        }
-    });
-
-
     </script>
 
     <!-- Payment Modal -->
@@ -5138,7 +5437,7 @@ function closePaymentModal() {
         <div class="payment-modal-content">
             <div class="payment-modal-header">
                 <h2>পেমেন্ট জমা করুন</h2>
-                <button class="payment-modal-close" onclick="closePaymentModal()">&times;</button>
+                <button class="payment-modal-close">&times;</button>
             </div>
             <div class="payment-modal-body">
                 <div class="payment-info">
@@ -5168,7 +5467,7 @@ function closePaymentModal() {
                 </div>
             </div>
             <div class="payment-buttons">
-                <button class="payment-btn payment-btn-cancel" onclick="closePaymentModal()">বাতিল</button>
+                <button class="payment-btn payment-btn-cancel">বাতিল</button>
                 <button class="payment-btn payment-btn-submit" id="submit-payment-btn">জমা দিন</button>
             </div>
         </div>
