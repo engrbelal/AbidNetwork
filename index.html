@@ -1979,7 +1979,7 @@ const ACTIVITIES_PER_PAGE = 10; // প্রতিবার ১০টি কর�
             'বাড়ি১ঃ মেইন রাউটার', 'বাড়ি২ঃ বোরহানের বাসা', 'বাড়ি৩ঃ টিনশেড', 
             'বাড়ি৪ঃ পিছনের বাসা', 'বাড়ি৫ঃ গোলাপের বাসা'
         ];
-        const defaultBillAmounts = [100, 150, 170, 300, 350, 'other'];
+        const defaultBillAmounts = [150, 170, 'other'];
         const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
         const years = Array.from({length: 10}, (_, i) => new Date().getFullYear() - 5 + i);
 
@@ -2824,7 +2824,7 @@ function checkAndDisplayBillReminder() {
 
         function initializeCustomerForm() {
             populateDropdown('customerHouse', db.locations, { isBengali: false });
-            populateDropdown('customerBill', defaultBillAmounts, { defaultValue: 150 });
+            populateDropdown('customerBill', defaultBillAmounts);
             if (!customerIdInput.value) {
                 connectionDateInput.valueAsDate = new Date();
             }
@@ -2841,7 +2841,6 @@ function checkAndDisplayBillReminder() {
             customerFormTitle.textContent = 'নতুন গ্রাহক যোগ করুন';
             customerSubmitBtn.textContent = 'গ্রাহক যোগ করুন';
             connectionDateInput.valueAsDate = new Date();
-            customerBillInput.value = 150;
             customBillGroup.classList.add('hidden');
             customerCancelBtn.style.display = 'none';
             setMacAddress('');
