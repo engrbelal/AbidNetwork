@@ -1142,7 +1142,15 @@
                 </div>
                 
                 <div class="card">
-                    <h2>সাম্প্রতিক কার্যক্রম</h2>
+                    <h2 style="display: flex; justify-content: space-between; align-items: center;">
+    <span>সাম্প্রতিক কার্যক্রম</span>
+    <button id="clear-activity-log-btn" class="btn btn-delete" style="font-size: 12px; padding: 5px 10px;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="vertical-align: middle; margin-right: 4px;">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+        </svg>
+        লগ মুছুন
+    </button>
+</h2>
                     <div id="recent-activities" class="activity-grid">
                         <!-- Activities will be dynamically loaded here -->
                     </div>
@@ -5215,6 +5223,34 @@ if (closeModalBtn) {
 }
 if (cancelModalBtn) {
     cancelModalBtn.addEventListener('click', closePaymentModal);
+}
+const clearActivityLogBtn = document.getElementById('clear-activity-log-btn');
+
+if (clearActivityLogBtn) {
+    clearActivityLogBtn.addEventListener('click', () => {
+        if (confirm('আপনি কি নিশ্চিতভাবে সকল সাম্প্রতিক কার্যক্রমের লগ মুছে ফেলতে চান? এই কাজটি ফেরানো যাবে না।')) {
+
+            const ACTIVITY_STORAGE_KEY = 'abidNetworkActivities_v1';
+            localStorage.removeItem(ACTIVITY_STORAGE_KEY);
+
+            const activitiesContainer = document.getElementById('recent-activities');
+            const noActivitiesDiv = document.getElementById('no-activities');
+            const loadMoreBtnContainer = document.getElementById('activity-loader');
+
+            if (activitiesContainer) {
+                activitiesContainer.innerHTML = '';
+                activitiesContainer.style.display = 'none';
+            }
+            if (noActivitiesDiv) {
+                noActivitiesDiv.style.display = 'block';
+            }
+            if (loadMoreBtnContainer) {
+                loadMoreBtnContainer.style.display = 'none';
+            }
+
+            alert('সকল কার্যক্রমের লগ সফলভাবে মুছে ফেলা হয়েছে।');
+        }
+    });
 }
      
         // Initialize version management
