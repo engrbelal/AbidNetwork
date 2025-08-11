@@ -3262,62 +3262,86 @@ function createBillForCustomer(customer, year, month) {
     });
 }
 
-
         generateBillsBtn.addEventListener('click', () => {
-            const year = parseInt(document.getElementById('generateYear').value);
-            const month = parseInt(document.getElementById('generateMonth').value);
-            const customerId = document.getElementById('generateForCustomer').value;
+    const year = parseInt(document.getElementById('generateYear').value);
+    const month = parseInt(document.getElementById('generateMonth').value);
+    const customerId = document.getElementById('generateForCustomer').value;
 
-            if (db.customers.length === 0) {
-                alert('এই মুহূর্তে সিস্টেমে কোন গ্রাহক নেই তাই বিল তৈরি করা যাচ্ছে না');
-                return;
+    if (db.customers.length === 0) {
+        alert('এই মুহূর্তে সিস্টেমে কোন গ্রাহক নেই তাই বিল তৈরি করা যাচ্ছে না');
+        return;
+    }
+
+    if (customerId === 'all') {
+        const existingBilledCustomerIds = new Set(db.bills.filter(b => b.year === year && b.month === month).map(b => b.customerId));
+        
+        const customersToBill = db.customers.filter(customer => {
+            if (customer.isFree || existingBilledCustomerIds.has(customer.id)) {
+                return false;
             }
+            const connectionDate = new Date(customer.connectionDate);
+            const today = new Date();
+            const diffTime = Math.abs(today - connectionDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays > 30;
+        });
 
-            if (customerId === 'all') {
-                const existingBilledCustomerIds = new Set(db.bills.filter(b => b.year === year && b.month === month).map(b => b.customerId));
-                const customersToBill = db.customers.filter(c => !existingBilledCustomerIds.has(c.id));
-                
-                if (customersToBill.length === 0) {
-                    alert('সকল গ্রাহকের বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে।');
+        if (customersToBill.length === 0) {
+            alert('এই মুহূর্তে বিল তৈরির জন্য যোগ্য কোনো গ্রাহক পাওয়া যায়নি। (যাদের সংযোগের বয়স ৩০ দিনের বেশি এবং বিল তৈরি হয়নি)');
+            return;
+        }
+
+        customersToBill.forEach(customer => createBillForCustomer(customer, year, month));
+        alert(`${toBengaliNumber(customersToBill.length)} জন যোগ্য গ্রাহকের জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
+        
+        addActivity('bill_created', `${toBengaliNumber(customersToBill.length)} জন গ্রাহকের জন্য বিল তৈরি করা হয়েছে`, {
+            month: month,
+            year: year,
+            customerCount: customersToBill.length
+        });
+        showBackupReminder();
+
+    } else {
+        const customer = db.customers.find(c => c.id === customerId);
+        if (customer) {
+            const connectionDate = new Date(customer.connectionDate);
+            const today = new Date();
+            const diffTime = Math.abs(today - connectionDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 30) {
+                if (diffDays < 25) {
+                    alert(`বিল তৈরি করা সম্ভব নয়। ${customer.name}-এর সংযোগের বয়স এখনো ২৫ দিন পূর্ণ হয়নি।`);
                     return;
                 }
-                                customersToBill.forEach(customer => createBillForCustomer(customer, year, month));
-                alert(`${toBengaliNumber(customersToBill.length)} জন নতুন গ্রাহকের জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
                 
-                // Add activity log for bulk bill creation
-                addActivity('bill_created', `${toBengaliNumber(customersToBill.length)} জন গ্রাহকের জন্য বিল তৈরি করা হয়েছে`, {
-                    month: month,
-                    year: year,
-                    customerCount: customersToBill.length
-                });
-                
-                showBackupReminder();
-            } else {
-                const customer = db.customers.find(c => c.id === customerId);
-                if (customer) {
-                    const existingBillIndex = db.bills.findIndex(b => b.customerId === customer.id && b.year === year && b.month === month);
-                    if (existingBillIndex > -1) {
-                        if(!confirm(`${customer.name}-এর বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে। আপনি কি এটি মুছে আবার তৈরি করতে চান?`)) return;
-                        db.bills.splice(existingBillIndex, 1);
-                    }
-                    createBillForCustomer(customer, year, month);
-                    alert(`${customer.name}-এর জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
-                    
-                    // Add activity log for individual bill creation
-                    addActivity('bill_created', `${customer.name}-এর জন্য বিল তৈরি করা হয়েছে`, {
-                        customerName: customer.name,
-                        month: month,
-                        year: year,
-                        amount: customer.monthlyBill
-                    });
-                    
-                    showBackupReminder();
+                const proceed = confirm(`সতর্কবার্তা: ${customer.name}-এর সংযোগের বয়স এখনো ৩০ দিন পূর্ণ হয়নি (বর্তমান বয়স ${toBengaliNumber(diffDays)} দিন)। \n\nআপনি কি तरी বিলটি তৈরি করতে চান?`);
+                if (!proceed) {
+                    return;
                 }
             }
+
+            const existingBillIndex = db.bills.findIndex(b => b.customerId === customer.id && b.year === year && b.month === month);
+            if (existingBillIndex > -1) {
+                if(!confirm(`${customer.name}-এর বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে। আপনি কি এটি মুছে আবার তৈরি করতে চান?`)) return;
+                db.bills.splice(existingBillIndex, 1);
+            }
+            createBillForCustomer(customer, year, month);
+            alert(`${customer.name}-এর জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
             
-            saveDb();
-            renderBillingPage();
-        });
+            addActivity('bill_created', `${customer.name}-এর জন্য বিল তৈরি করা হয়েছে`, {
+                customerName: customer.name,
+                month: month,
+                year: year,
+                amount: customer.monthlyBill
+            });
+            showBackupReminder();
+        }
+    }
+
+    saveDb();
+    renderBillingPage();
+});
 
         deleteMonthBillsBtn.addEventListener('click', () => {
             const year = parseInt(document.getElementById('generateYear').value);
