@@ -2832,15 +2832,13 @@ function checkAndDisplayBillReminder() {
         }
 
         function initializeCustomerForm() {
-    populateDropdown('customerHouse', db.locations, { isBengali: false });
-    populateDropdown('customerBill', defaultBillAmounts, { defaultValue: 150 });
-    
-    if (!customerIdInput.value) {
-        connectionDateInput.valueAsDate = new Date();
-    }
-    
-    setupMacAddressInput();
-}
+            populateDropdown('customerHouse', db.locations, { isBengali: false });
+            populateDropdown('customerBill', defaultBillAmounts);
+            if (!customerIdInput.value) {
+                connectionDateInput.valueAsDate = new Date();
+            }
+            setupMacAddressInput();
+        }
 
         customerBillInput.addEventListener('change', () => {
             customBillGroup.classList.toggle('hidden', customerBillInput.value !== 'other');
@@ -3024,45 +3022,32 @@ function getCustomerStatus(customer) { // এখানে 'customer' অবজ�
         document.getElementById('customer-search-input').addEventListener('input', (e) => renderCustomerListPage(e.target.value));
 
         window.editCustomer = (id) => {
-            window.editCustomer = (id) => {
-    const customer = db.customers.find(c => c.id === id);
-    if (customer) {
-        // ধাপ ১: প্রথমে পেজ পরিবর্তন করুন
-        switchPage('add_customer');
+            const customer = db.customers.find(c => c.id === id);
+            if (customer) {
+                customerIdInput.value = customer.id;
+                customerNameInput.value = customer.name;
+                customerPhoneInput.value = customer.phone;
+                customerHouseInput.value = customer.house;
+                
+                if (defaultBillAmounts.includes(customer.monthlyBill)) {
+                    customerBillInput.value = customer.monthlyBill;
+                    customBillGroup.classList.add('hidden');
+                } else {
+                    customerBillInput.value = 'other';
+                    customBillAmountInput.value = customer.monthlyBill;
+                    customBillGroup.classList.remove('hidden');
+                }
 
-        // ধাপ ২: এরপর ফর্মের সকল ফিল্ডে গ্রাহকের সঠিক তথ্য বসান
-        customerIdInput.value = customer.id;
-        customerNameInput.value = customer.name;
-        customerPhoneInput.value = customer.phone;
-        
-        customerHouseInput.value = customer.house;
-        
-        const billAmount = customer.monthlyBill;
-        const billOptionsValues = Array.from(customerBillInput.options).map(opt => parseFloat(opt.value));
-
-        if (billOptionsValues.includes(billAmount)) {
-            customerBillInput.value = billAmount;
-            customBillGroup.classList.add('hidden');
-            customBillAmountInput.value = '';
-        } else {
-            customerBillInput.value = 'other';
-            customBillGroup.classList.remove('hidden');
-            customBillAmountInput.value = billAmount;
-        }
-
-        connectionDateInput.value = customer.connectionDate;
-        isFreeUserInput.checked = customer.isFree;
-        isFreeUserInput.dispatchEvent(new Event('change'));
-        setMacAddress(customer.macAddress);
-        
-        customerFormTitle.textContent = 'গ্রাহকের তথ্য আপডেট করুন';
-        customerSubmitBtn.textContent = 'আপডেট করুন';
-        customerCancelBtn.style.display = 'inline-block';
-        
-        window.scrollTo(0, 0);
-    }
-};
-
+                connectionDateInput.value = customer.connectionDate;
+                isFreeUserInput.checked = customer.isFree;
+                isFreeUserInput.dispatchEvent(new Event('change'));
+                setMacAddress(customer.macAddress);
+                customerFormTitle.textContent = 'গ্রাহকের তথ্য আপডেট করুন';
+                customerSubmitBtn.textContent = 'আপডেট করুন';
+                customerCancelBtn.style.display = 'inline-block';
+                switchPage('add_customer');
+            }
+        };
 
         window.deleteCustomer = (id) => {
             if (confirm('আপনি কি নিশ্চিতভাবে এই গ্রাহককে মুছে ফেলতে চান? এই গ্রাহকের সকল বিলের তথ্যও মুছে যাবে।')) {
