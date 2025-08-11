@@ -2752,25 +2752,23 @@ function checkAndDisplayBillReminder() {
 }
 
         function renderDashboard() {
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
-            const monthBills = db.bills.filter(b => b.month == currentMonth && b.year == currentYear);
-            
-            const totalCustomers = db.customers.length;
-            const totalBillAmount = monthBills.reduce((sum, b) => sum + b.totalAmount, 0);
-            const totalPaid = monthBills.filter(b => b.isPaid).reduce((sum, b) => sum + b.monthlyAmount + b.dueAmount, 0);
-            const totalUnpaid = monthBills.filter(b => !b.isPaid).reduce((sum, b) => sum + b.totalAmount, 0);
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const monthBills = db.bills.filter(b => b.month == currentMonth && b.year == currentYear);
 
-            document.getElementById('db-total-customers').textContent = toBengaliNumber(totalCustomers);
-            document.getElementById('db-total-bill').textContent = `৳${toBengaliNumber(totalBillAmount.toFixed(2))}`;
-            document.getElementById('db-total-paid').textContent = `৳${toBengaliNumber(totalPaid.toFixed(2))}`;
-            document.getElementById('db-total-unpaid').textContent = `৳${toBengaliNumber(totalUnpaid.toFixed(2))}`;
-            
-            // Render recent activities
-            renderRecentActivities();
-            checkAndDisplayBillReminder();
-        }
+    const totalCustomers = db.customers.length;
+    const totalBillAmount = monthBills.reduce((sum, bill) => sum + (bill.totalAmount || 0), 0);
+    const totalPaid = monthBills.reduce((sum, bill) => sum + (bill.paidAmount || 0), 0);
+    const totalUnpaid = totalBillAmount - totalPaid;
 
+    document.getElementById('db-total-customers').textContent = toBengaliNumber(totalCustomers);
+    document.getElementById('db-total-bill').textContent = `৳${toBengaliNumber(totalBillAmount.toFixed(2))}`;
+    document.getElementById('db-total-paid').textContent = `৳${toBengaliNumber(totalPaid.toFixed(2))}`;
+    document.getElementById('db-total-unpaid').textContent = `৳${toBengaliNumber(totalUnpaid.toFixed(2))}`;
+    
+    renderRecentActivities();
+    checkAndDisplayBillReminder();
+}
         const customerForm = document.getElementById('customerForm');
         const customerIdInput = document.getElementById('customerId');
         const customerNameInput = document.getElementById('customerName');
