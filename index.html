@@ -3245,6 +3245,11 @@
           icon: '🗑️',
           className: 'all-isp-history-deleted'
         },
+        'discount_applied': { 
+          title: 'বিশেষ ছাড়',    
+          icon: '🏷️',
+          className: 'due-adjustment'
+        },
         'report_generated': {
           title: 'রিপোর্ট তৈরি',
           icon: '🖨️',
@@ -4153,14 +4158,23 @@
           });
           container.appendChild(card);
         });
+        const lastScrollPosition = sessionStorage.getItem('lastScrollPosition');
+        if (lastScrollPosition) {
+            setTimeout(() => {
+                window.scrollTo(0, parseInt(lastScrollPosition, 10));
+                sessionStorage.removeItem('lastScrollPosition');
+            }, 100);
+        }
       }
 
       document.getElementById('customer-search-input').addEventListener('input', (e) => renderCustomerListPage(e
         .target.value));
 
       window.editCustomer = (id) => {
-        customerToEditId = id;
-        switchPage('add_customer');
+          sessionStorage.setItem('lastScrollPosition', window.scrollY);
+          
+          customerToEditId = id;
+          switchPage('add_customer');
       };
 
       window.deleteCustomer = (id) => {
@@ -6034,6 +6048,13 @@
 
       function getCustomerFinancialStatus(customerId) {
         const customer = db.customers.find(c => c.id === customerId);
+        if (customer.isFree) {
+            return {
+                icon: '⭐',
+                text: 'ফ্রি গ্রাহক',
+                color: '#319795'
+            };
+        }
         if (!customer) return null;
 
         const isActive = customer.isActive === undefined ? true : customer.isActive;
@@ -6125,8 +6146,7 @@
         document.getElementById("profile-customer-name").textContent = customer.name;
         document.getElementById("profile-phone").textContent = customer.phone || 'N/A';
         document.getElementById("profile-house").textContent = customer.house;
-        document.getElementById("profile-bill").textContent =
-          `৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}`;
+        document.getElementById("profile-bill").textContent = customer.isFree ? 'প্রযোজ্য নয়' : `৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}`;
         document.getElementById("profile-connection-date").textContent = toBengaliNumber(new Date(customer
           .connectionDate).toLocaleDateString('bn-BD'));
         document.getElementById("profile-mac").textContent = customer.macAddress || 'N/A';
