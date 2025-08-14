@@ -5143,331 +5143,173 @@
       }
 
       function generatePdfReport() {
-        const year = document.getElementById('reportYear').value;
-        const month = document.getElementById('reportMonth').value;
-        const filteredBills = db.bills.filter(b => b.year == year && b.month == month);
-
-        const totalRevenue = filteredBills.filter(b => b.isPaid).reduce((sum, b) => sum + b.monthlyAmount + b
-          .dueAmount, 0);
-        const totalDues = filteredBills.filter(b => !b.isPaid).reduce((sum, b) => sum + b.totalAmount, 0);
-        const ispPaid = db.ispPayments.find(p => p.year == year && p.month == month)?.amount || 0;
-        const netIncome = totalRevenue - ispPaid;
-
-        const companyName = localStorage.getItem('websiteName') || 'Abid Network';
-        const companyLogo = localStorage.getItem('websiteLogo') || '';
-
-        // Create PDF content
-        const pdfContent = `
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${companyName} - মাসিক রিপোর্ট</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Noto Sans Bengali', Arial, sans-serif;
-            line-height: 1.6;
-            color: #2D3748;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3;
-        }
-
-        .logo-container {
-            margin-bottom: 15px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .logo {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.3);
-            object-fit: cover;
-        }
-
-        .company-name {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .report-title {
-            font-size: 18px;
-            font-weight: 400;
-            opacity: 0.9;
-            position: relative;
-            z-index: 1;
-        }
-
-        .content {
-            padding: 40px;
-        }
-
-        .report-period {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-            border-radius: 10px;
-            border-left: 5px solid #4299e1;
-        }
-
-        .period-text {
-            font-size: 20px;
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .summary-grid {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 15px !important;
-            margin-bottom: 20px !important;
-            width: 100% !important;
-        }
-
-        .summary-card {
-            background: #f8f9fa !important;
-            border: 1px solid #dee2e6 !important;
-            border-radius: 8px !important;
-            padding: 15px !important;
-            text-align: center !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-            margin-bottom: 0 !important;
-        }
-
-        .summary-card h3 {
-            margin: 0 0 10px 0 !important;
-            font-size: 16px !important;
-            color: #495057 !important;
-        }
-
-        .dashboard-summary-grid {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 15px !important;
-            max-width: 500px !important;
-            margin: 0 auto !important;
-        }
-
-        .dashboard-summary-grid .summary-item {
-            background: #f8f9fa !important;
-            border: 1px solid #dee2e6 !important;
-            border-radius: 8px !important;
-            padding: 15px !important;
-            text-align: center !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-            margin-bottom: 0 !important;
-        }
-
-        .dashboard-summary-grid .summary-item h3 {
-            margin: 0 0 10px 0 !important;
-            font-size: 16px !important;
-            color: #495057 !important;
-        }
-
-        .dashboard-summary-grid .summary-item p {
-            font-size: 24px !important;
-            font-weight: bold !important;
-            color: #007bff !important;
-            margin: 0 !important;
-        }
-
-            .summary-card {
-                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-                padding: 10px;
-                border-radius: 10px;
-                text-align: center;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-                border-top: 4px solid;
-                transition: transform 0.3s ease;
-                aspect-ratio: 1 / 1; /* Make it square */
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                font-size: 10px; /* Adjust font size for better fit */
-                min-width: 100px; /* Ensure minimum width */
-                max-width: 150px; /* Limit maximum width */
-            }
-            .summary-card .card-title { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
-            .summary-card .card-amount { font-size: 15px; font-weight: 700; }
-
-            .house-card {
-                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-                padding: 10px;
-                border-radius: 8px;
-                text-align: center;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-                border-left: 4px solid #4299e1;
-                aspect-ratio: 1 / 1; /* Make it square */
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                font-size: 10px; /* Adjust font size for better fit */
-                min-width: 100px; /* Ensure minimum width */
-                max-width: 150px; /* Limit maximum width */
-            }
-            .house-card .house-name { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
-            .house-card .house-revenue { font-size: 15px; font-weight: 700; }
-
-            @media print {
-                html, body { width: 100%; height: auto; margin: 0; padding: 0; }
-                .container { width: 100%; max-width: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; }
-            .header { page-break-after: auto; }
-            .content { page-break-before: auto; page-break-inside: avoid; }
-            .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-width: 400px; margin: 0 auto; }
-            .house-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .summary-card, .house-card { page-break-inside: avoid; padding: 8px; font-size: 10px; min-width: 100px; max-width: 150px; }
-            .summary-card .card-title, .house-card .house-name { font-size: 11px; }
-            .summary-card .card-amount, .house-card .house-revenue { font-size: 14px; }
-            @page { size: A4 portrait; margin: 1cm; }
-            body { padding: 0 !important; }
-            .footer { font-size: 10px; padding: 10px; page-break-before: auto; }
-            }
-            @media screen and (max-width: 768px) {
-                .summary-grid, .house-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 8px;
-                    max-width: 100%;
-                }
-                .summary-card, .house-card {
-                    padding: 8px;
-                    font-size: 10px;
-                    min-width: 100px;
-                    max-width: none;
-                }
-                .summary-card .card-title, .house-card .house-name { font-size: 11px; }
-                .summary-card .card-amount, .house-card .house-revenue { font-size: 14px; }
-            }
-
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo-container">
-                ${companyLogo ? `<img src="${companyLogo}" alt="Company Logo" class="logo">` : ''}
-            </div>
-            <h1 class="company-name">${companyName}</h1>
-            <p class="report-title">মাসিক নেটওয়ার্ক রিপোর্ট</p>
-        </div>
-
-        <div class="content">
-            <div class="report-period">
-                <div class="period-text">${months[month]} ${toBengaliNumber(year)}</div>
-            </div>
-
-            <div class="summary-grid">
-                <div class="summary-card revenue">
-                    <div class="card-title">মোট আয়</div>
-                    <div class="card-amount">৳${toBengaliNumber(totalRevenue.toFixed(2))}</div>
-                </div>
-                <div class="summary-card dues">
-                    <div class="card-title">মোট বকেয়া</div>
-                    <div class="card-amount">৳${toBengaliNumber(totalDues.toFixed(2))}</div>
-                </div>
-                <div class="summary-card isp">
-                    <div class="card-title">আইএসপি বিল</div>
-                    <div class="card-amount">৳${toBengaliNumber(ispPaid.toFixed(2))}</div>
-                </div>
-                <div class="summary-card net">
-                    <div class="card-title">নিট আয়</div>
-                    <div class="card-amount">৳${toBengaliNumber(netIncome.toFixed(2))}</div>
-                </div>
-            </div>
-
-            <div class="house-reports">
-                <h2 class="section-title">বাড়ি ভিত্তিক রিপোর্ট</h2>
-                <div class="house-grid">
-                    ${db.locations.map(houseName => {
-                        const houseBills = filteredBills.filter(b => {
-                            const customer = db.customers.find(c => c.id === b.customerId);
-                            return customer && customer.house === houseName;
-                        });
-                        const houseRevenue = houseBills.filter(b => b.isPaid).reduce((sum, b) => sum + b.monthlyAmount + b.dueAmount, 0);
-                        if (houseBills.length > 0) {
-                            return ` <
-          div class = "house-card" >
-          <
-          div class = "house-name" > $ {
-            houseName
-          } < /div> <
-          div class = "house-revenue" > ৳$ {
-            toBengaliNumber(houseRevenue.toFixed(2))
-          } < /div> <
-          /div>
-        `;
-                        }
-                        return '';
-                    }).join('')}
-                </div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>এই রিপোর্টটি ${companyName} দ্বারা স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে</p>
-            <p class="generated-time">তৈরির সময়: ${new Date().toLocaleString('bn-BD')}</p>
-        </div>
-    </div>
-</body>
-</html>
-            `;
-
-        // Create a new window and write the PDF content
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(pdfContent);
-        printWindow.document.close();
-
-        // Wait for the content to load, then print
-        printWindow.onload = function() {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        };
+          const year = document.getElementById('reportYear').value;
+          const month = document.getElementById('reportMonth').value;
+          const filteredBills = db.bills.filter(b => b.year == year && b.month == month);
+      
+          // Calculate all necessary values
+          const totalRevenue = filteredBills.reduce((sum, bill) => {
+              // Only count paid amounts for revenue
+              return sum + (bill.paidAmount || 0);
+          }, 0);
+      
+          const totalDues = filteredBills.reduce((sum, bill) => {
+              // Sum of remaining dues for all non-paid bills
+              return sum + (bill.remainingDue || 0);
+          }, 0);
+      
+          const ispPaid = db.ispPayments.find(p => p.year == year && p.month == month)?.amount || 0;
+          const netIncome = totalRevenue - ispPaid;
+      
+          const companyName = localStorage.getItem('websiteName') || 'Abid Network';
+          const companyLogo = localStorage.getItem('websiteLogo') || 'https://i.ibb.co/Lz0dGqC/router-icon.png'; // Default logo
+      
+          // Generate HTML for house-wise revenue table
+          const houseReportsHtml = db.locations.map(houseName => {
+              const houseBills = filteredBills.filter(b => {
+                  const customer = db.customers.find(c => c.id === b.customerId);
+                  return customer && customer.house === houseName;
+              });
+              
+              if (houseBills.length === 0) return '';
+      
+              const houseRevenue = houseBills.reduce((sum, bill) => sum + (bill.paidAmount || 0), 0);
+              
+              if (houseRevenue === 0) return ''; // Don't show houses with zero revenue for the month
+      
+              return `
+                  <tr>
+                      <td>${houseName}</td>
+                      <td>৳${toBengaliNumber(houseRevenue.toFixed(2))}</td>
+                  </tr>
+              `;
+          }).join('');
+      
+          // Generate the full PDF content with the new, final design
+          const pdfContent = `
+              <!DOCTYPE html>
+              <html lang="bn">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>মাসিক রিপোর্ট - ${companyName}</title>
+                  <link rel="preconnect" href="https://fonts.googleapis.com">
+                  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+                  <style>
+                      :root {
+                          --primary-color: #4A5568; --secondary-color: #5A67D8; --text-color: #2D3748;
+                          --border-color: #E2E8F0; --bg-light: #F7FAFC;
+                      }
+                      body {
+                          font-family: 'Noto Sans Bengali', sans-serif; background-color: #eef2f7;
+                          color: var(--text-color); margin: 0; padding: 20px;
+                          -webkit-print-color-adjust: exact; print-color-adjust: exact;
+                      }
+                      .pdf-container {
+                          max-width: 800px; margin: 0 auto; background: white;
+                          border: 1px solid var(--border-color); box-shadow: 0 0 20px rgba(0,0,0,0.07);
+                          border-radius: 8px; overflow: hidden;
+                      }
+                      .pdf-header {
+                          padding: 20px 30px; display: flex; align-items: center; gap: 15px;
+                          background-color: var(--bg-light); border-bottom: 1px solid var(--border-color);
+                      }
+                      .pdf-header .company-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+                      .pdf-header .company-name { font-size: 24px; font-weight: 700; color: var(--text-color); margin: 0; }
+                      .pdf-content { padding: 25px 30px; }
+                      .report-title-bar {
+                          display: flex; justify-content: space-between; align-items: baseline;
+                          border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; margin-bottom: 20px;
+                      }
+                      .report-title-bar h2 { font-size: 18px; font-weight: 600; color: var(--primary-color); margin: 0; }
+                      .report-title-bar .report-period { font-size: 15px; font-weight: 500; color: var(--secondary-color); }
+                      .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 30px; }
+                      .summary-card {
+                          display: flex; align-items: center; gap: 15px; background-color: var(--bg-light);
+                          padding: 15px; border-radius: 6px; border-left: 4px solid;
+                      }
+                      .summary-card .icon { font-size: 24px; line-height: 1; }
+                      .summary-card .info h3 { font-size: 13px; font-weight: 500; color: #718096; margin: 0 0 4px 0; }
+                      .summary-card .info p { font-size: 18px; font-weight: 700; margin: 0; }
+                      .summary-card.revenue { border-color: #38A169; color: #38A169; }
+                      .summary-card.dues { border-color: #DD6B20; color: #DD6B20; }
+                      .summary-card.isp { border-color: #E53E3E; color: #E53E3E; }
+                      .summary-card.net { border-color: #3182CE; color: #3182CE; }
+                      .house-table-container h2 { font-size: 16px; font-weight: 600; color: var(--primary-color); margin-bottom: 10px; }
+                      table { width: 100%; border-collapse: collapse; }
+                      th, td { border: 1px solid var(--border-color); padding: 10px 12px; font-size: 13px; text-align: left; }
+                      th { background-color: var(--bg-light); font-weight: 600; }
+                      td:last-child { text-align: right; font-weight: 600; }
+                      .pdf-footer {
+                          text-align: center; padding: 15px; font-size: 11px;
+                          color: #A0AEC0; background-color: var(--bg-light); border-top: 1px solid var(--border-color);
+                      }
+                      @media (max-width: 600px) {
+                          body { padding: 10px; }
+                          .pdf-container { width: 100%; box-sizing: border-box; }
+                          .pdf-header, .pdf-content { padding: 15px; }
+                          .pdf-header .company-name { font-size: 18px; }
+                          .report-title-bar { flex-direction: column; align-items: flex-start; gap: 5px; }
+                          .summary-grid { gap: 10px; }
+                          .summary-card { padding: 10px; gap: 10px; }
+                          .summary-card .icon { font-size: 20px; }
+                          .summary-card .info h3 { font-size: 11px; }
+                          .summary-card .info p { font-size: 15px; }
+                          th, td { padding: 8px; font-size: 12px; }
+                      }
+                      @media print {
+                          body { padding: 0; margin: 0; background-color: white; }
+                          .pdf-container { box-shadow: none; border: none; width: 100%; max-width: 100%; border-radius: 0; }
+                          .summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                          @page { size: A4; margin: 15mm; }
+                      }
+                  </style>
+              </head>
+              <body>
+                  <div class="pdf-container">
+                      <header class="pdf-header">
+                          <img src="${companyLogo}" alt="লোগো" class="company-logo">
+                          <h1 class="company-name">${companyName}</h1>
+                      </header>
+                      <main class="pdf-content">
+                          <div class="report-title-bar">
+                              <h2>মাসিক আর্থিক রিপোর্ট</h2>
+                              <div class="report-period">${months[month]}, ${toBengaliNumber(year)}</div>
+                          </div>
+                          <div class="summary-grid">
+                              <div class="summary-card revenue"><span class="icon">💰</span><div class="info"><h3>মোট আয়</h3><p>৳${toBengaliNumber(totalRevenue.toFixed(2))}</p></div></div>
+                              <div class="summary-card dues"><span class="icon">⚠️</span><div class="info"><h3>মোট বকেয়া</h3><p>৳${toBengaliNumber(totalDues.toFixed(2))}</p></div></div>
+                              <div class="summary-card isp"><span class="icon">💸</span><div class="info"><h3>আইএসপি খরচ</h3><p>(−) ৳${toBengaliNumber(ispPaid.toFixed(2))}</p></div></div>
+                              <div class="summary-card net"><span class="icon">📈</span><div class="info"><h3>নিট আয়</h3><p>৳${toBengaliNumber(netIncome.toFixed(2))}</p></div></div>
+                          </div>
+                          <div class="house-table-container">
+                              <h2>বাড়ি ভিত্তিক আয়ের বিস্তারিত</h2>
+                              <table>
+                                  <thead><tr><th>বাড়ির নাম</th><th>আয়ের পরিমাণ</th></tr></thead>
+                                  <tbody>${houseReportsHtml}</tbody>
+                              </table>
+                          </div>
+                      </main>
+                      <footer class="pdf-footer">
+                          রিপোর্টটি স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে। জেনারেট করার সময়: ${toBengaliNumber(new Date().toLocaleString('bn-BD'))}
+                      </footer>
+                  </div>
+              </body>
+              </html>
+          `;
+      
+          // Create a new window and print the content
+          const printWindow = window.open('', '_blank');
+          printWindow.document.write(pdfContent);
+          printWindow.document.close();
+          printWindow.onload = () => {
+              setTimeout(() => {
+                  printWindow.print();
+              }, 500); // Delay to ensure styles are loaded
+          };
       }
+
 
       function renderReportPage() {
         initializeReportFilters();
@@ -5504,247 +5346,173 @@
 
       function generateCustomerBillingHistoryPdf(customerId) {
         const customer = db.customers.find(c => c.id === customerId);
-        if (!customer) return;
-
-        const customerBills = db.bills.filter(b => b.customerId === customerId)
-          .sort((a, b) => new Date(a.year, a.month) - new Date(b.year, b.month));
-
+        if (!customer) {
+            alert('গ্রাহক খুঁজে পাওয়া যায়নি।');
+            return;
+        }
+    
+        const customerBills = db.bills
+            .filter(b => b.customerId === customerId)
+            .sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)); // Sort by most recent first
+    
         const companyName = localStorage.getItem('websiteName') || 'Abid Network';
-        const companyLogo = localStorage.getItem('websiteLogo') || '';
-
-        let billingHistoryHtml = '';
-        if (customerBills.length === 0) {
-          billingHistoryHtml = '<p style="text-align: center; color: #718096;">কোনো বিলের ইতিহাস পাওয়া যায়নি।</p>';
-        } else {
-          billingHistoryHtml = `
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                        <thead>
-                            <tr style="background-color: #f2f2f2;">
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">মাস/বছর</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">মাসিক বিল</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">পূর্বের বকেয়া</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">অ্যাডভান্স ব্যবহার</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">মোট বিল</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">স্ট্যাটাস</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-          billingHistoryHtml += `
-                        </tbody>
-                    </table>
-                `;
-        }
-
-        const pdfContent = `
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${companyName} - ${customer.name} এর বিলিং ইতিহাস</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Noto Sans Bengali', Arial, sans-serif;
-            line-height: 1.6;
-            color: #2D3748;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3;
-        }
-
-        .logo-container {
-            margin-bottom: 15px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .logo {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid rgba(255,255,255,0.3);
-            object-fit: cover;
-        }
-
-        .company-name {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .report-title {
-            font-size: 18px;
-            font-weight: 400;
-            opacity: 0.9;
-            position: relative;
-            z-index: 1;
-        }
-
-        .content {
-            padding: 40px;
-        }
-
-        .customer-info {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-            border-radius: 10px;
-            border-left: 5px solid #4299e1;
-        }
-
-        .customer-name {
-            font-size: 20px;
-            font-weight: 600;
-            color: #2d3748;
-        }
-        .customer-details {
-            font-size: 14px;
-            color: #718096;
-            margin-top: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 13px;
-        }
-
-        th, td {
-            padding: 10px 8px;
-            border: 1px solid #ddd;
-            text-align: left;
-            word-wrap: break-word;
-            max-width: 120px;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            font-weight: 600;
-        }
-
-        @media screen and (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 8px;
+        const companyLogo = localStorage.getItem('websiteLogo') || 'https://i.ibb.co/Lz0dGqC/router-icon.png';
+    
+        const billingHistoryHtml = customerBills.map(bill => {
+            let statusClass, statusText;
+            if (bill.status === 'paid') {
+                statusClass = 'status-paid';
+                statusText = 'পরিশোধিত';
+            } else if (bill.status === 'partially_paid') {
+                statusClass = 'status-partial';
+                statusText = 'আংশিক';
+            } else {
+                statusClass = 'status-unpaid';
+                statusText = 'বকেয়া';
             }
-
-            .header {
-                padding: 20px;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            table {
-                font-size: 11px;
-            }
-
-            th, td {
-                padding: 6px 4px;
-                max-width: 80px;
-                font-size: 11px;
-            }
-
-            .customer-name {
-                font-size: 18px;
-            }
-
-            .customer-details {
-                font-size: 12px;
-            }
-        }
-
-        @media print {
-            html, body { width: 100%; height: auto; margin: 0; padding: 0; }
-            .container { width: 100%; max-width: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; }
-            .header, .content, .footer { page-break-inside: avoid; }
-            table { page-break-inside: avoid; width: 100%; font-size: 12px; }
-            th, td { padding: 8px 4px; word-wrap: break-word; }
-            @page { size: A4 portrait; margin: 1cm; }
-            body { padding: 0 !important; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="logo-container">
-                ${companyLogo ? `<img src="${companyLogo}" alt="Company Logo" class="logo">` : ''}
-            </div>
-            <h1 class="company-name">${companyName}</h1>
-            <p class="report-title">গ্রাহকের বিলিং ইতিহাস</p>
-        </div>
-
-        <div class="content">
-            <div class="customer-info">
-                <div class="customer-name">${customer.name}</div>
-                <div class="customer-details">ফোন: ${customer.phone || 'N/A'} | বাড়ি: ${customer.house} | মাসিক বিল: ৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}</div>
-            </div>
-
-            ${billingHistoryHtml}
-        </div>
-
-        <div class="footer">
-            <p>এই রিপোর্টটি ${companyName} দ্বারা স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে</p>
-            <p class="generated-time">তৈরির সময়: ${new Date().toLocaleString('bn-BD')}</p>
-        </div>
-    </div>
-</body>
-</html>
+    
+            return `
+                <tr>
+                    <td>${months[bill.month]}, ${toBengaliNumber(bill.year)}</td>
+                    <td>৳${toBengaliNumber(bill.totalAmount.toFixed(2))}</td>
+                    <td>৳${toBengaliNumber(bill.paidAmount.toFixed(2))}</td>
+                    <td>৳${toBengaliNumber(bill.remainingDue.toFixed(2))}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                </tr>
             `;
-
+        }).join('');
+    
+        const pdfContent = `
+            <!DOCTYPE html>
+            <html lang="bn">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>${customer.name} - বিলিং ইতিহাস</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+                <style>
+                    :root {
+                        --primary-color: #4A5568; --secondary-color: #5A67D8; --text-color: #2D3748;
+                        --border-color: #E2E8F0; --bg-light: #F7FAFC; --paid-color: #38A169;
+                        --unpaid-color: #DD6B20; --partial-color: #D69E2E;
+                    }
+                    body {
+                        font-family: 'Noto Sans Bengali', sans-serif; background-color: #eef2f7;
+                        color: var(--text-color); margin: 0; padding: 20px;
+                        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+                    }
+                    .pdf-container {
+                        max-width: 800px; margin: 0 auto; background: white;
+                        border: 1px solid var(--border-color); box-shadow: 0 0 20px rgba(0,0,0,0.07);
+                        border-radius: 8px; overflow: hidden;
+                    }
+                    .pdf-header {
+                        padding: 20px 30px; display: flex; align-items: center; gap: 15px;
+                        background-color: var(--bg-light); border-bottom: 1px solid var(--border-color);
+                    }
+                    .pdf-header .company-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+                    .pdf-header .company-name { font-size: 24px; font-weight: 700; color: var(--text-color); margin: 0; }
+                    .pdf-content { padding: 25px 30px; }
+                    .customer-info-card {
+                        background-color: var(--bg-light); border: 1px solid var(--border-color);
+                        border-left: 5px solid var(--secondary-color); border-radius: 8px;
+                        padding: 20px; margin-bottom: 25px;
+                    }
+                    .customer-info-card .customer-name { font-size: 22px; font-weight: 700; color: var(--primary-color); margin: 0 0 10px 0; }
+                    .customer-info-card .info-grid {
+                        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 8px; font-size: 13px;
+                    }
+                    .customer-info-card .info-item { color: #718096; }
+                    .customer-info-card .info-item strong { color: var(--text-color); font-weight: 600; }
+                    .history-table-container h2 { font-size: 16px; font-weight: 600; color: var(--primary-color); margin-bottom: 10px; }
+                    .table-wrapper { overflow-x: auto; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td {
+                        border: 1px solid var(--border-color); padding: 10px 12px;
+                        font-size: 13px; text-align: left; vertical-align: middle; white-space: nowrap;
+                    }
+                    th { background-color: var(--bg-light); font-weight: 600; }
+                    .status-badge {
+                        display: inline-block; padding: 3px 10px; border-radius: 15px;
+                        font-size: 11px; font-weight: 600; color: white; text-align: center;
+                    }
+                    .status-paid { background-color: var(--paid-color); }
+                    .status-unpaid { background-color: var(--unpaid-color); }
+                    .status-partial { background-color: var(--partial-color); }
+                    .pdf-footer {
+                        text-align: center; padding: 15px; font-size: 11px;
+                        color: #A0AEC0; background-color: var(--bg-light); border-top: 1px solid var(--border-color);
+                    }
+                    @media (max-width: 600px) {
+                        body { padding: 10px; }
+                        .pdf-header, .pdf-content { padding: 15px; }
+                        .pdf-header .company-name { font-size: 20px; }
+                        .customer-info-card .customer-name { font-size: 18px; }
+                        .customer-info-card .info-grid { grid-template-columns: 1fr; }
+                        th, td { padding: 8px; font-size: 12px; }
+                    }
+                    @media print {
+                        body { padding: 0; margin: 0; background-color: white; }
+                        .pdf-container { box-shadow: none; border: none; width: 100%; max-width: 100%; border-radius: 0; }
+                        .table-wrapper { overflow-x: visible; }
+                        @page { size: A4; margin: 15mm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-container">
+                    <header class="pdf-header">
+                        <img src="${companyLogo}" alt="লোগো" class="company-logo">
+                        <h1 class="company-name">${companyName}</h1>
+                    </header>
+                    <main class="pdf-content">
+                        <div class="customer-info-card">
+                            <h2 class="customer-name">${customer.name}</h2>
+                            <div class="info-grid">
+                                <div class="info-item">ফোন: <strong>${customer.phone || 'N/A'}</strong></div>
+                                <div class="info-item">বাড়ি: <strong>${customer.house}</strong></div>
+                                <div class="info-item">মাসিক বিল: <strong>৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}</strong></div>
+                                <div class="info-item">সংযোগের তারিখ: <strong>${toBengaliNumber(new Date(customer.connectionDate).toLocaleDateString('bn-BD'))}</strong></div>
+                            </div>
+                        </div>
+                        <div class="history-table-container">
+                            <h2>বিলিং এবং পেমেন্টের ইতিহাস</h2>
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>মাস/বছর</th>
+                                            <th>মোট বিল</th>
+                                            <th>পরিশোধিত</th>
+                                            <th>বকেয়া</th>
+                                            <th>স্ট্যাটাস</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${billingHistoryHtml}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </main>
+                    <footer class="pdf-footer">
+                        রিপোর্টটি স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে। জেনারেট করার সময়: ${toBengaliNumber(new Date().toLocaleString('bn-BD'))}
+                    </footer>
+                </div>
+            </body>
+            </html>
+        `;
+    
         const printWindow = window.open('', '_blank');
         printWindow.document.write(pdfContent);
         printWindow.document.close();
-
-        printWindow.onload = function() {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
+        printWindow.onload = () => {
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
         };
-      }
+    }
 
       function renderSettingsPage() {
         // Website customization functionality
