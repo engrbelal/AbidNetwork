@@ -6076,33 +6076,29 @@
       loadDb();
       setFooterYear();
 
-      // Load saved website customizations
-      const savedName = localStorage.getItem('websiteName');
-      const savedLogo = localStorage.getItem('websiteLogo');
+// Load saved website customizations
+const savedName = localStorage.getItem('websiteName');
+const savedLogo = localStorage.getItem('websiteLogo');
 
-      if (savedName) {
-        document.getElementById("header-company-name").textContent = savedName;
-        document.getElementById("sidebar-company-name").textContent = savedName;
-        document.title = savedName;
-      }
+if (savedName) {
+    document.getElementById("header-company-name").textContent = savedName;
+    document.getElementById("sidebar-company-name").textContent = savedName;
+    document.title = savedName;
+}
 
-      if (savedLogo) {
-        const headerLogoImg = document.getElementById("header-company-logo");
-        headerLogoImg.src = savedLogo;
-        headerLogoImg.style.display = "inline-block"; // Make sure it's visible
-        const sidebarLogoImg = document.getElementById("sidebar-company-logo");
-        sidebarLogoImg.src = savedLogo;
-        sidebarLogoImg.style.display = "inline-block"; // Make sure it's visible
-      } else {
-        // Hide logo if no logo is set
-        const headerLogoImg = document.getElementById("header-company-logo");
-        headerLogoImg.style.display = "none";
-        const sidebarLogoImg = document.getElementById("sidebar-company-logo");
-        sidebarLogoImg.style.display = "none";
-      }
+// শুধু তখনই লোগো পরিবর্তন করো, যখন localStorage-এ কোনো ডেটা থাকে
+if (savedLogo) {
+    const headerLogoImg = document.getElementById("header-company-logo");
+    headerLogoImg.src = savedLogo;
+    headerLogoImg.style.display = "inline-block"; // Make sure it's visible
+    const sidebarLogoImg = document.getElementById("sidebar-company-logo");
+    sidebarLogoImg.src = savedLogo;
+    sidebarLogoImg.style.display = "inline-block"; // Make sure it's visible
+}
+// else ব্লকটি মুছে ফেলা হয়েছে, তাই localStorage-এ লোগো না থাকলে কিছুই হবে না
 
-      const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
-      switchPage(lastPage, true);
+const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
+switchPage(lastPage, true);
       // --- এই ফাংশনটি খুঁজে বের করে প্রতিস্থাপন করুন ---
 
       function submitPayment() {
