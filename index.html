@@ -6779,24 +6779,25 @@ switchPage(lastPage, true);
       </div>
     </div>
   </div>
-  <script type="module">
+<script type="module">
   // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // Your web app's Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyBYJUlfOUth0JfOGLF2ospRvMbis2sb_Mc",
     authDomain: "abidnetworkapp.firebaseapp.com",
     projectId: "abidnetworkapp",
-    storageBucket: "abidnetworkapp.firebasestorage.app",
+    storageBucket: "abidnetworkapp.appspot.com",
     messagingSenderId: "822608480878",
     appId: "1:822608480878:web:5dcafa4d07839e5173f47f"
   };
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
+  // Initialize Cloud Firestore and get a reference to the service
+  const firestore = getFirestore(app);
 </script>
 </body>
 
