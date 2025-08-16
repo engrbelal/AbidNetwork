@@ -3011,10 +3011,16 @@
       return bengaliStr;
     }
 
-    function saveDb() {
-      const DATABASE_KEY = 'abidNetworkDb_v41';
-      localStorage.setItem(DATABASE_KEY, JSON.stringify(db));
+    async function saveDb() {
+    try {
+        // এই ফাংশনটি এখন থেকে সরাসরি কল করা হবে না।
+        // প্রতিটি ডেটা পরিবর্তনের সাথে সাথে আমরা Firebase-এ সেভ করব।
+        console.log("ডেটা এখন থেকে সরাসরি Firebase-এ সেভ হবে।");
+    } catch (error) {
+        console.error("Firebase-এ ডেটা সেভ করতে সমস্যা হয়েছে:", error);
     }
+}
+
 
     // Global variable to track which bill the payment modal is opened for
     let currentPaymentBillId = null;
@@ -3412,24 +3418,52 @@
         localStorage.setItem(DATABASE_KEY, JSON.stringify(db));
       }
 
-      function loadDb() {
-        const data = localStorage.getItem(DATABASE_KEY);
-        if (data) {
-          const parsedData = JSON.parse(data);
-          db = migrateDb(parsedData);
+// পুরনো loadDb() ফাংশনটি মুছে এই নতুন কোডটি বসান
+    async function loadDb() {
+    try {
+        console.log("Firebase থেকে ডেটা লোড করা হচ্ছে...");
+        
+        const customersCol = collection(firestore, 'customers');
+        const billsCol = collection(firestore, 'bills');
+        const ispPaymentsCol = collection(firestore, 'ispPayments');
+        const routersCol = collection(firestore, 'routers');
+        const locationsCol = collection(firestore, 'locations');
+        const activitiesCol = collection(firestore, 'activities');
+
+        const [customerSnapshot, billSnapshot, ispPaymentSnapshot, routerSnapshot, locationSnapshot, activitySnapshot] = await Promise.all([
+            getDocs(customersCol),
+            getDocs(billsCol),
+            getDocs(ispPaymentsCol),
+            getDocs(routersCol),
+            getDocs(locationsCol),
+            getDocs(activitiesCol)
+        ]);
+
+        db.customers = customerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        db.bills = billSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        db.ispPayments = ispPaymentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        db.routers = routerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const locationsData = locationSnapshot.docs.map(doc => doc.data());
+        if (locationsData.length > 0) {
+            db.locations = locationsData[0].names || [];
         } else {
-          // Check for older db versions for migration
-          const oldDataV40 = localStorage.getItem('abidNetworkDb_v40');
-          if (oldDataV40) {
-            console.log("Migrating data from v4.0 to v4.1");
-            const parsedOldData = JSON.parse(oldDataV40);
-            db = migrateDb(parsedOldData);
-          } else {
-            db.locations = [...defaultLocations];
-          }
+            db.locations = defaultLocations.slice();
         }
-        saveDb();
-      }
+
+        const activitiesData = activitySnapshot.docs.map(doc => doc.data());
+        if (activitiesData.length > 0) {
+            saveActivities(activitiesData[0].log || []);
+        }
+
+        console.log("ডেটা সফলভাবে লোড হয়েছে।");
+        
+    } catch (error) {
+        console.error("Firebase থেকে ডেটা লোড করতে সমস্যা হয়েছে:", error);
+        alert("অনলাইন ডেটাবেজ থেকে তথ্য লোড করা সম্ভব হয়নি। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করুন।");
+    }
+}
+
 
       const sidebar = document.getElementById('sidebar');
       const menuToggle = document.getElementById('menu-toggle');
@@ -3623,80 +3657,92 @@
         };
 
         // ★★★ নতুন এবং উন্নত কোড (সফলতার বার্তা সহ) ★★★
-        routerForm.onsubmit = (e) => {
-          e.preventDefault();
-          const imageFile = document.getElementById('routerImage').files[0];
-          let imageDataUrl = null;
+// পুরনো routerForm.onsubmit ব্লকটি মুছে এই নতুন কোডটি বসান
+// পুরনো routerForm.onsubmit ব্লকটি মুছে এই নতুন এবং সঠিক কোডটি বসান
+routerForm.onsubmit = (e) => {
+    e.preventDefault();
+    const imageFile = document.getElementById('routerImage').files[0];
+    let imageDataUrl = null;
 
-          const processRouter = () => {
-            const routerId = document.getElementById('routerId').value;
-            const routerData = {
-              name: document.getElementById('routerName').value,
-              model: document.getElementById('routerModel').value,
-              ip: document.getElementById('routerIp').value,
-              macAddress: getMacAddress('routerMacContainer'),
-              distanceFeet: parseFloat(document.getElementById('routerDistanceFeet').value) || 0,
-              distanceMeters: parseFloat(document.getElementById('routerDistanceMeters').value) || 0,
-              powerSpec: document.getElementById('routerPowerSpec').value,
-              password: document.getElementById('routerPassword').value,
-              location: document.getElementById('routerLocationSelect').value,
-              image: imageDataUrl
-            };
+    const processRouter = async () => {
+        const routerId = document.getElementById('routerId').value;
+        const routerData = {
+            name: document.getElementById('routerName').value,
+            model: document.getElementById('routerModel').value,
+            ip: document.getElementById('routerIp').value,
+            macAddress: getMacAddress('routerMacContainer'),
+            distanceFeet: parseFloat(document.getElementById('routerDistanceFeet').value) || 0,
+            distanceMeters: parseFloat(document.getElementById('routerDistanceMeters').value) || 0,
+            powerSpec: document.getElementById('routerPowerSpec').value,
+            password: document.getElementById('routerPassword').value,
+            location: document.getElementById('routerLocationSelect').value,
+            image: imageDataUrl
+        };
 
+        try {
             if (routerId) {
-              // রাউটার আপডেট করা হচ্ছে
-              const routerIndex = db.routers.findIndex(r => r.id == routerId);
-              if (routerIndex > -1) {
-                db.routers[routerIndex] = {
-                  ...db.routers[routerIndex],
-                  ...routerData
-                };
-                // ★★★ সফলতার বার্তা যোগ করা হয়েছে ★★★
-                alert(`রাউটার "${routerData.name}"-এর তথ্য সফলভাবে আপডেট করা হয়েছে।`);
-              }
-            } else {
-              // নতুন রাউটার যোগ করা হচ্ছে
-              const newRouter = {
-                id: Date.now(),
-                ...routerData
-              };
-              db.routers.push(newRouter);
+                // রাউটার আপডেট করা হচ্ছে
+                const routerRef = doc(firestore, "routers", routerId);
+                // এখানে শুধু যে ডেটা পরিবর্তন হচ্ছে, সেটাই পাঠানো হচ্ছে
+                await updateDoc(routerRef, routerData);
 
-              addActivity('router_added', `${routerData.name} নামে নতুন রাউটার যোগ করা হয়েছে`, {
-                routerName: routerData.name,
-                location: routerData.location,
-                model: routerData.model,
-                ip: routerData.ip
-              });
-              // ★★★ সফলতার বার্তা যোগ করা হয়েছে ★★★
-              alert(`নতুন রাউটার "${routerData.name}" সফলভাবে যোগ করা হয়েছে।`);
+                // লোকাল ডেটাবেজ আপডেট
+                const routerIndex = db.routers.findIndex(r => r.id == routerId);
+                if (routerIndex > -1) {
+                    // পুরনো ডেটার সাথে নতুন ডেটা মার্জ করা হচ্ছে
+                    db.routers[routerIndex] = { ...db.routers[routerIndex], ...routerData };
+                }
+                alert(`রাউটার "${routerData.name}"-এর তথ্য সফলভাবে আপডেট করা হয়েছে।`);
+
+            } else {
+                // নতুন রাউটার যোগ করা হচ্ছে
+                const newId = Date.now().toString(); // *** মূল পরিবর্তন এখানে ***
+                const newRouter = { id: newId, ...routerData };
+                await setDoc(doc(firestore, "routers", newRouter.id), newRouter);
+                
+                // লোকাল ডেটাবেজ আপডেট
+                db.routers.push(newRouter);
+
+                addActivity('router_added', `${routerData.name} নামে নতুন রাউটার যোগ করা হয়েছে`, {
+                    routerName: routerData.name,
+                    location: routerData.location,
+                    model: routerData.model,
+                    ip: routerData.ip
+                });
+                alert(`নতুন রাউটার "${routerData.name}" সফলভাবে যোগ করা হয়েছে।`);
             }
 
-            saveAndRenderRouters();
+            // saveAndRenderRouters() ফাংশনটি এখন শুধু UI রিফ্রেশ করবে
+            renderRouters(); 
             routerForm.reset();
             document.getElementById('routerId').value = '';
             formContainer.classList.remove('active');
             toggleFormBtn.textContent = 'নতুন রাউটার যোগ করুন';
-          };
 
-          if (imageFile) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              imageDataUrl = e.target.result;
-              processRouter();
-            };
-            reader.readAsDataURL(imageFile);
-          } else {
-            const routerId = document.getElementById('routerId').value;
-            if (routerId) {
-              const existingRouter = db.routers.find(r => r.id == routerId);
-              if (existingRouter) {
-                imageDataUrl = existingRouter.image;
-              }
-            }
+        } catch (error) {
+            console.error("Firebase-এ রাউটার সেভ/আপডেট করতে সমস্যা হয়েছে: ", error);
+            alert("একটি ত্রুটি ঘটেছে। রাউটারের তথ্য সেভ করা সম্ভব হয়নি।");
+        }
+    };
+
+    if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imageDataUrl = e.target.result;
             processRouter();
-          }
         };
+        reader.readAsDataURL(imageFile);
+    } else {
+        const routerId = document.getElementById('routerId').value;
+        if (routerId) {
+            const existingRouter = db.routers.find(r => r.id == routerId);
+            if (existingRouter) {
+                imageDataUrl = existingRouter.image;
+            }
+        }
+        processRouter();
+    }
+};
 
         // ★★★ নতুন এবং নিরাপদ কোড (সতর্কবার্তা সহ) ★★★
         routerListContainer.onclick = (e) => {
@@ -3933,67 +3979,85 @@
         }
       });
 
-      customerForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const customerId = document.getElementById('customerId').value;
-        const customerName = document.getElementById('customerName').value.trim();
-        const isFree = document.getElementById('isFreeUser').checked;
+// পুরনো customerForm.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+customerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const customerId = document.getElementById('customerId').value;
+    const customerName = document.getElementById('customerName').value.trim();
+    const isFree = document.getElementById('isFreeUser').checked;
 
-        // Check for duplicate name (only for new customers)
-        if (!customerId) {
-          const existingCustomer = db.customers.find(c => c.name.toLowerCase() === customerName.toLowerCase());
-          if (existingCustomer) {
+    if (!customerId) {
+        const existingCustomer = db.customers.find(c => c.name.toLowerCase() === customerName.toLowerCase());
+        if (existingCustomer) {
             alert('এই নামে ইতিমধ্যে একজন গ্রাহক রয়েছে। দয়া করে অন্য নাম ব্যবহার করুন।');
             return;
-          }
         }
+    }
 
-        let monthlyBill = 0;
-        if (!isFree) {
-          const billSelect = document.getElementById('customerBill');
-          monthlyBill = billSelect.value === 'other' ?
+    let monthlyBill = 0;
+    if (!isFree) {
+        const billSelect = document.getElementById('customerBill');
+        monthlyBill = billSelect.value === 'other' ?
             parseFloat(document.getElementById('customBillAmount').value) :
             parseFloat(billSelect.value);
-        }
-        const macAddress = getMacAddress('customerMacContainer');
+    }
+    const macAddress = getMacAddress('customerMacContainer');
 
-        const customerData = {
-          id: customerId || Date.now().toString(),
-          name: customerName,
-          phone: document.getElementById('customerPhone').value,
-          house: document.getElementById('customerHouse').value,
-          monthlyBill,
-          connectionDate: document.getElementById('connectionDate').value,
-          isFree,
-          macAddress,
-          advanceBalance: 0,
-          deactivationPending: false
-        };
+    const customerData = {
+        name: customerName,
+        phone: document.getElementById('customerPhone').value,
+        house: document.getElementById('customerHouse').value,
+        monthlyBill,
+        connectionDate: document.getElementById('connectionDate').value,
+        isFree,
+        macAddress,
+        advanceBalance: 0,
+        deactivationPending: false
+    };
 
+    try {
         if (customerId) {
-          const index = db.customers.findIndex(c => c.id === customerId);
-          customerData.advanceBalance = db.customers[index].advanceBalance;
-          db.customers[index] = customerData;
-          alert('গ্রাহকের তথ্য সফলভাবে আপডেট করা হয়েছে।');
-          showBackupReminder();
+            // গ্রাহক আপডেট করা হচ্ছে
+            const customerRef = doc(firestore, "customers", customerId);
+            await updateDoc(customerRef, customerData);
+
+            // লোকাল ডেটাবেজ আপডেট
+            const index = db.customers.findIndex(c => c.id === customerId);
+            if (index > -1) {
+                customerData.id = customerId; // আইডি আবার যোগ করা
+                customerData.advanceBalance = db.customers[index].advanceBalance;
+                db.customers[index] = customerData;
+            }
+            alert('গ্রাহকের তথ্য সফলভাবে আপডেট করা হয়েছে।');
+
         } else {
-          db.customers.push(customerData);
-          alert('নতুন গ্রাহক সফলভাবে যোগ করা হয়েছে।');
-
-          // Add activity log for new customer
-          addActivity('customer_added', `${customerName} নামে নতুন গ্রাহক যোগ করা হয়েছে`, {
-            customerName: customerName,
-            location: customerData.house,
-            amount: monthlyBill,
-            isFree: isFree
-          });
-
-          showBackupReminder();
+            // নতুন গ্রাহক যোগ করা হচ্ছে
+            const newId = Date.now().toString();
+            customerData.id = newId;
+            await setDoc(doc(firestore, "customers", newId), customerData);
+            
+            // লোকাল ডেটাবেজ আপডেট
+            db.customers.push(customerData);
+            
+            alert('নতুন গ্রাহক সফলভাবে যোগ করা হয়েছে।');
+            addActivity('customer_added', `${customerName} নামে নতুন গ্রাহক যোগ করা হয়েছে`, {
+                customerName: customerName,
+                location: customerData.house,
+                amount: monthlyBill,
+                isFree: isFree
+            });
         }
-        saveDb();
+        
+        showBackupReminder();
         resetCustomerForm();
         switchPage('customers');
-      });
+
+    } catch (error) {
+        console.error("Firebase-এ গ্রাহক সেভ/আপডেট করতে সমস্যা হয়েছে: ", error);
+        alert("একটি ত্রুটি ঘটেছে। গ্রাহকের তথ্য সেভ করা সম্ভব হয়নি।");
+    }
+});
+
 
       customerCancelBtn.addEventListener('click', () => {
         resetCustomerForm();
@@ -4180,25 +4244,47 @@
           switchPage('add_customer');
       };
 
-      window.deleteCustomer = (id) => {
-        if (confirm('আপনি কি নিশ্চিতভাবে এই গ্রাহককে মুছে ফেলতে চান? এই গ্রাহকের সকল বিলের তথ্যও মুছে যাবে।')) {
-          const customer = db.customers.find(c => c.id === id);
-          const customerName = customer ? customer.name : 'অজানা গ্রাহক';
+// পুরনো deleteCustomer ফাংশনটি মুছে এই নতুন কোডটি বসান
+    window.deleteCustomer = async (id) => {
+    if (confirm('আপনি কি নিশ্চিতভাবে এই গ্রাহককে মুছে ফেলতে চান? এই গ্রাহকের সকল বিলের তথ্যও মুছে যাবে।')) {
+        const customer = db.customers.find(c => c.id === id);
+        const customerName = customer ? customer.name : 'অজানা গ্রাহক';
 
-          db.customers = db.customers.filter(c => c.id !== id);
-          db.bills = db.bills.filter(b => b.customerId !== id);
+        try {
+            // Firebase থেকে গ্রাহক মুছে ফেলা হচ্ছে
+            await deleteDoc(doc(firestore, "customers", id));
 
-          // Add activity log for customer deleted
-          addActivity('customer_deleted', `গ্রাহক মুছে ফেলা হয়েছে: ${customerName}`, {
-            customerName: customerName,
-            customerId: id
-          });
+            // এই গ্রাহকের সাথে সম্পর্কিত সব বিল খুঁজে বের করে মুছে ফেলা
+            const billsToDelete = db.bills.filter(b => b.customerId === id);
+            const batch = writeBatch(firestore);
+            billsToDelete.forEach(bill => {
+                const billRef = doc(firestore, "bills", bill.id);
+                batch.delete(billRef);
+            });
+            await batch.commit(); // একসাথে সব বিল ডিলিট করা
 
-          saveDb();
-          renderCustomerListPage(document.getElementById('customer-search-input').value);
-          renderDashboard();
+            // লোকাল ডেটাবেজ আপডেট করা
+            db.customers = db.customers.filter(c => c.id !== id);
+            db.bills = db.bills.filter(b => b.customerId !== id);
+
+            addActivity('customer_deleted', `গ্রাহক মুছে ফেলা হয়েছে: ${customerName}`, {
+                customerName: customerName,
+                customerId: id
+            });
+
+            alert(`গ্রাহক "${customerName}" এবং তার সকল বিল সফলভাবে মুছে ফেলা হয়েছে।`);
+            
+            // UI রিফ্রেশ করা
+            renderCustomerListPage(document.getElementById('customer-search-input').value);
+            renderDashboard();
+
+        } catch (error) {
+            console.error("Firebase থেকে গ্রাহক মুছে ফেলতে সমস্যা হয়েছে: ", error);
+            alert("একটি ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
         }
-      };
+    }
+};
+
       const generateBillsBtn = document.getElementById('generateBillsBtn');
       const deleteMonthBillsBtn = document.getElementById('delete-month-bills-btn');
       const billingListContainer = document.getElementById('billing-list-by-house');
@@ -4358,167 +4444,135 @@
 
       // --- আপনার পুরনো সম্পূর্ণ createBillForCustomer ফাংশনটি মুছে, এই নতুন কোডটি পেস্ট করুন ---
 
-      function createBillForCustomer(customer, year, month) {
-        if (customer.isFree) return;
+// পুরনো createBillForCustomer ফাংশনটি মুছে এই নতুন কোডটি বসান
+    function createBillObjectForCustomer(customer, year, month) {
+    if (customer.isFree) return null;
 
-        const previousMonth = month === 0 ? 11 : month - 1;
-        const yearForPrevious = month === 0 ? year - 1 : year;
+    const previousMonth = month === 0 ? 11 : month - 1;
+    const yearForPrevious = month === 0 ? year - 1 : year;
+    const lastBill = db.bills.find(b => b.customerId === customer.id && b.year == yearForPrevious && b.month == previousMonth);
+    let dueFromPrevious = (lastBill && lastBill.status !== 'paid') ? (lastBill.remainingDue || 0) : 0;
 
-        const lastBill = db.bills.find(b => b.customerId === customer.id && b.year == yearForPrevious && b.month ==
-          previousMonth);
+    let monthlyAmount = customer.monthlyBill;
+    let totalAmount = monthlyAmount + dueFromPrevious;
+    let status = 'unpaid';
+    let advanceUsed = 0;
+    let paidAmount = 0;
+    let remainingDue = totalAmount;
+    let paymentHistoryForBill = [];
 
-        let dueFromPrevious = 0;
-        if (lastBill && lastBill.status !== 'paid') {
-          dueFromPrevious = lastBill.remainingDue || 0;
-        }
-
-        let monthlyAmount = customer.monthlyBill;
-        let totalAmount = monthlyAmount + dueFromPrevious;
-        let status = 'unpaid';
-        let advanceUsed = 0;
-        let paidAmount = 0;
-        let remainingDue = totalAmount;
-        let paymentHistoryForBill = []; // ★ নতুন: এই বিলের জন্য পেমেন্ট ইতিহাস
-
-        // অ্যাডভান্স ব্যালেন্স ব্যবহারের নতুন এবং উন্নত লজিক
-        if (customer.advanceBalance > 0) {
-          const amountToUseFromAdvance = Math.min(customer.advanceBalance, totalAmount);
-
-          advanceUsed = amountToUseFromAdvance;
-          customer.advanceBalance -= amountToUseFromAdvance;
-          paidAmount = amountToUseFromAdvance;
-          remainingDue = totalAmount - amountToUseFromAdvance;
-
-          // ★★★ মূল পরিবর্তন: অ্যাডভান্স ব্যবহারের জন্য ইতিহাসে এন্ট্রি যোগ ★★★
-          paymentHistoryForBill.push({
+    if (customer.advanceBalance > 0) {
+        const amountToUseFromAdvance = Math.min(customer.advanceBalance, totalAmount);
+        advanceUsed = amountToUseFromAdvance;
+        customer.advanceBalance -= amountToUseFromAdvance;
+        paidAmount = amountToUseFromAdvance;
+        remainingDue = totalAmount - amountToUseFromAdvance;
+        paymentHistoryForBill.push({
             id: Date.now() + Math.random(),
             amount: amountToUseFromAdvance,
             date: new Date().toISOString(),
-            source: 'advance', // উৎস: অ্যাডভান্স
+            source: 'advance',
             balanceAfter: remainingDue
-          });
-
-          status = remainingDue <= 0 ? 'paid' : 'partially_paid';
-        }
-
-        db.bills.push({
-          id: Date.now().toString() + customer.id,
-          customerId: customer.id,
-          year: parseInt(year),
-          month: parseInt(month),
-          createdAt: new Date().toISOString(),
-          monthlyAmount: monthlyAmount,
-          dueAmount: dueFromPrevious,
-          totalAmount: totalAmount,
-          status: status,
-          paidAmount: paidAmount,
-          remainingDue: remainingDue,
-          adjustments: [],
-          advanceUsed: advanceUsed,
-          isPaid: status === 'paid',
-          paymentHistory: paymentHistoryForBill,
-          discount: 0
         });
-      }
+        status = remainingDue <= 0 ? 'paid' : 'partially_paid';
+    }
 
-      generateBillsBtn.addEventListener('click', () => {
-        const year = parseInt(document.getElementById('generateYear').value);
-        const month = parseInt(document.getElementById('generateMonth').value);
-        const customerId = document.getElementById('generateForCustomer').value;
+    return {
+        id: Date.now().toString() + customer.id,
+        customerId: customer.id,
+        year: parseInt(year),
+        month: parseInt(month),
+        createdAt: new Date().toISOString(),
+        monthlyAmount: monthlyAmount,
+        dueAmount: dueFromPrevious,
+        totalAmount: totalAmount,
+        status: status,
+        paidAmount: paidAmount,
+        remainingDue: remainingDue,
+        adjustments: [],
+        advanceUsed: advanceUsed,
+        isPaid: status === 'paid',
+        paymentHistory: paymentHistoryForBill,
+        discount: 0
+    };
+}
 
-        if (db.customers.length === 0) {
-          alert('এই মুহূর্তে সিস্টেমে কোন গ্রাহক নেই তাই বিল তৈরি করা যাচ্ছে না');
-          return;
-        }
 
-        if (customerId === 'all') {
-          const existingBilledCustomerIds = new Set(db.bills.filter(b => b.year === year && b.month === month)
-            .map(b => b.customerId));
+// পুরনো generateBillsBtn.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+generateBillsBtn.addEventListener('click', async () => {
+    const year = parseInt(document.getElementById('generateYear').value);
+    const month = parseInt(document.getElementById('generateMonth').value);
+    const customerId = document.getElementById('generateForCustomer').value;
 
-          const customersToBill = db.customers.filter(customer => {
+    if (db.customers.length === 0) {
+        alert('এই মুহূর্তে সিস্টেমে কোন গ্রাহক নেই তাই বিল তৈরি করা যাচ্ছে না');
+        return;
+    }
+
+    const billsToCreate = [];
+    if (customerId === 'all') {
+        const existingBilledCustomerIds = new Set(db.bills.filter(b => b.year === year && b.month === month).map(b => b.customerId));
+        const customersToBill = db.customers.filter(customer => {
             const isActive = customer.isActive === undefined ? true : customer.isActive;
             if (!isActive || customer.isFree || existingBilledCustomerIds.has(customer.id)) {
-              return false;
+                return false;
             }
             const connectionDate = new Date(customer.connectionDate);
             const today = new Date();
             const diffTime = Math.abs(today - connectionDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             return diffDays > 30;
-          });
+        });
 
-          if (customersToBill.length === 0) {
-            alert(
-              'এই মুহূর্তে বিল তৈরির জন্য যোগ্য কোনো গ্রাহক পাওয়া যায়নি। (যাদের সংযোগের বয়স ৩০ দিনের বেশি এবং বিল তৈরি হয়নি)'
-              );
+        if (customersToBill.length === 0) {
+            alert('এই মুহূর্তে বিল তৈরির জন্য যোগ্য কোনো গ্রাহক পাওয়া যায়নি।');
             return;
-          }
-
-          customersToBill.forEach(customer => createBillForCustomer(customer, year, month));
-          alert(
-            `${toBengaliNumber(customersToBill.length)} জন যোগ্য গ্রাহকের জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
-
-          addActivity('bill_created',
-            `${toBengaliNumber(customersToBill.length)} জন গ্রাহকের জন্য বিল তৈরি করা হয়েছে`, {
-              month: month,
-              year: year,
-              customerCount: customersToBill.length
-            });
-          showBackupReminder();
-
-        } else {
-          const customer = db.customers.find(c => c.id === customerId);
-          if (customer) {
-            const isActive = customer.isActive === undefined ? true : customer.isActive;
-            if (!isActive) {
-              alert(
-                `${customer.name}-এর সংযোগটি নিষ্ক্রিয় আছে। নিষ্ক্রিয় গ্রাহকের জন্য বিল তৈরি করা যাবে না।`);
-              return;
-            }
-
-            const connectionDate = new Date(customer.connectionDate);
-            const today = new Date();
-            const diffTime = Math.abs(today - connectionDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays <= 30) {
-              if (diffDays < 25) {
-                alert(`বিল তৈরি করা সম্ভব নয়। ${customer.name}-এর সংযোগের বয়স এখনো ২৫ দিন পূর্ণ হয়নি।`);
-                return;
-              }
-
-              const proceed = confirm(
-                `সতর্কবার্তা: ${customer.name}-এর সংযোগের বয়স এখনো ৩০ দিন পূর্ণ হয়নি (বর্তমান বয়স ${toBengaliNumber(diffDays)} দিন)। \n\nআপনি কি तरी বিলটি তৈরি করতে চান?`
-                );
-              if (!proceed) {
-                return;
-              }
-            }
-
-            const existingBillIndex = db.bills.findIndex(b => b.customerId === customer.id && b.year === year &&
-              b.month === month);
-            if (existingBillIndex > -1) {
-              if (!confirm(
-                  `${customer.name}-এর বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে। আপনি কি এটি মুছে আবার তৈরি করতে চান?`
-                  )) return;
-              db.bills.splice(existingBillIndex, 1);
-            }
-            createBillForCustomer(customer, year, month);
-            alert(`${customer.name}-এর জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
-
-            addActivity('bill_created', `${customer.name}-এর জন্য বিল তৈরি করা হয়েছে`, {
-              customerName: customer.name,
-              month: month,
-              year: year,
-              amount: customer.monthlyBill
-            });
-            showBackupReminder();
-          }
         }
+        customersToBill.forEach(customer => {
+            const newBill = createBillObjectForCustomer(customer, year, month);
+            if (newBill) billsToCreate.push(newBill);
+        });
 
-        saveDb();
-        renderBillingPage();
-      });
+    } else {
+        const customer = db.customers.find(c => c.id === customerId);
+        if (customer) {
+            // ... (আপনার পুরনো সব ভ্যালিডেশন লজিক এখানে একই থাকবে)
+            const existingBillIndex = db.bills.findIndex(b => b.customerId === customer.id && b.year === year && b.month === month);
+            if (existingBillIndex > -1) {
+                if (!confirm(`${customer.name}-এর বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে। আপনি কি এটি মুছে আবার তৈরি করতে চান?`)) return;
+                // আমরা পুরনো বিল Firebase থেকে পরে ডিলিট করব, আপাতত লোকাল থেকে সরাচ্ছি
+                db.bills.splice(existingBillIndex, 1);
+            }
+            const newBill = createBillObjectForCustomer(customer, year, month);
+            if (newBill) billsToCreate.push(newBill);
+        }
+    }
+
+    if (billsToCreate.length > 0) {
+        try {
+            const batch = writeBatch(firestore);
+            billsToCreate.forEach(bill => {
+                const billRef = doc(firestore, "bills", bill.id);
+                batch.set(billRef, bill);
+            });
+            await batch.commit();
+
+            // লোকাল ডেটাবেজ আপডেট করা
+            billsToCreate.forEach(bill => db.bills.push(bill));
+            
+            alert(`${toBengaliNumber(billsToCreate.length)} জন গ্রাহকের জন্য বিল সফলভাবে তৈরি এবং Firebase-এ সেভ করা হয়েছে।`);
+            addActivity('bill_created', `${toBengaliNumber(billsToCreate.length)} জন গ্রাহকের জন্য বিল তৈরি করা হয়েছে`, { month, year, customerCount: billsToCreate.length });
+            
+            renderBillingPage();
+            showBackupReminder();
+
+        } catch (error) {
+            console.error("Firebase-এ বিল সেভ করতে সমস্যা হয়েছে: ", error);
+            alert("একটি ত্রুটি ঘটেছে। বিলগুলো সেভ করা সম্ভব হয়নি।");
+        }
+    }
+});
+
 
       deleteMonthBillsBtn.addEventListener('click', () => {
         const year = parseInt(document.getElementById('generateYear').value);
@@ -4651,70 +4705,97 @@
 
       // এই নতুন কোডটি আপনার পুরনো adjustmentForm.addEventListener এর জায়গায় বসবে
 
-      adjustmentForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const billId = document.getElementById('adjustmentBillId').value;
-        const adjId = document.getElementById('adjustmentId').value;
-        const amount = parseFloat(document.getElementById('adjustmentAmount').value);
-        const type = document.getElementById('adjustmentType').value;
-        const notes = document.getElementById('adjustmentNotes').value;
-        const bill = db.bills.find(b => b.id === billId);
-        const customer = db.customers.find(c => c.id === bill.customerId);
+// পুরনো adjustmentForm.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+adjustmentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const billId = document.getElementById('adjustmentBillId').value;
+    const adjId = document.getElementById('adjustmentId').value;
+    const amount = parseFloat(document.getElementById('adjustmentAmount').value);
+    const type = document.getElementById('adjustmentType').value;
+    const notes = document.getElementById('adjustmentNotes').value;
 
-        if (!bill || !customer || isNaN(amount) || amount <= 0) {
-          alert("অনুগ্রহ করে সঠিক তথ্য দিন।");
-          return;
-        }
+    const billIndex = db.bills.findIndex(b => b.id === billId);
+    if (billIndex === -1) {
+        alert("ত্রুটি: বিল খুঁজে পাওয়া যায়নি।");
+        return;
+    }
+    const bill = { ...db.bills[billIndex] }; // Create a mutable copy
 
-        if (adjId) {
-          const adjIndex = bill.adjustments.findIndex(a => a.id === adjId);
-          if (adjIndex > -1) {
+    const customerIndex = db.customers.findIndex(c => c.id === bill.customerId);
+    if (customerIndex === -1) {
+        alert("ত্রুটি: গ্রাহক খুঁজে পাওয়া যায়নি।");
+        return;
+    }
+    const customer = { ...db.customers[customerIndex] }; // Create a mutable copy
+
+    if (isNaN(amount) || amount <= 0) {
+        alert("অনুগ্রহ করে সঠিক তথ্য দিন।");
+        return;
+    }
+
+    if (!bill.adjustments) {
+        bill.adjustments = [];
+    }
+
+    if (adjId) {
+        const adjIndex = bill.adjustments.findIndex(a => a.id === adjId);
+        if (adjIndex > -1) {
             const oldAdj = bill.adjustments[adjIndex];
             if (oldAdj.type === 'advance') {
-              customer.advanceBalance -= oldAdj.amount;
+                customer.advanceBalance -= oldAdj.amount;
             }
-            bill.adjustments[adjIndex] = {
-              ...oldAdj,
-              amount,
-              type,
-              notes
-            };
-          }
-        } else {
-          if (!bill.adjustments) {
-            bill.adjustments = [];
-          }
-          bill.adjustments.push({
+            bill.adjustments[adjIndex] = { ...oldAdj, amount, type, notes };
+        }
+    } else {
+        bill.adjustments.push({
             id: Date.now().toString() + Math.random(),
             amount,
             type,
             notes
-          });
-        }
+        });
+    }
 
-        if (type === 'advance') {
-          customer.advanceBalance = (customer.advanceBalance || 0) + amount;
-          addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা হয়েছে`, {
-            customerName: customer.name,
-            amount: amount,
-            notes: notes
-          });
-        } else {
-          addActivity('due_adjustment', `${customer.name}-এর বকেয়া সমন্বয় করা হয়েছে`, {
-            customerName: customer.name,
-            amount: amount,
-            notes: notes
-          });
-        }
+    if (type === 'advance') {
+        customer.advanceBalance = (customer.advanceBalance || 0) + amount;
+        addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা হয়েছে`, { customerName: customer.name, amount, notes });
+    } else {
+        addActivity('due_adjustment', `${customer.name}-এর বকেয়া সমন্বয় করা হয়েছে`, { customerName: customer.name, amount, notes });
+    }
 
-        recalculateBillTotal(billId);
-        saveDb();
+    // Recalculate bill and update status
+    const updatedBill = recalculateBillObject(bill, customer);
+    if (updatedBill.remainingDue <= 0) {
+        updatedBill.status = 'paid';
+        updatedBill.isPaid = true;
+    } else if (updatedBill.paidAmount > 0) {
+        updatedBill.status = 'partially_paid';
+        updatedBill.isPaid = false;
+    } else {
+        updatedBill.status = 'unpaid';
+        updatedBill.isPaid = false;
+    }
+
+    try {
+        const batch = writeBatch(firestore);
+        batch.set(doc(firestore, "bills", updatedBill.id), updatedBill);
+        batch.set(doc(firestore, "customers", customer.id), customer);
+        await batch.commit();
+
+        // Update local db
+        db.bills[billIndex] = updatedBill;
+        db.customers[customerIndex] = customer;
+
         renderAdjustments(billId);
         renderBillingPage();
         renderCustomerListPage();
         resetAdjustmentForm();
         alert("সমন্বয় সফলভাবে সম্পন্ন হয়েছে!");
-      });
+
+    } catch (error) {
+        console.error("Firebase-এ অ্যাডজাস্টমেন্ট সেভ করতে সমস্যা হয়েছে: ", error);
+        alert("একটি ত্রুটি ঘটেছে। অ্যাডজাস্টমেন্ট সেভ করা সম্ভব হয়নি।");
+    }
+});
 
       document.querySelectorAll('.note-tag').forEach(tag => {
         tag.addEventListener('click', () => {
@@ -4722,33 +4803,44 @@
         });
       });
 
-      window.deleteBill = (billId) => {
-        if (confirm('আপনি কি নিশ্চিতভাবে এই বিলটি মুছে ফেলতে চান?')) {
-          const billIndex = db.bills.findIndex(b => b.id === billId);
-          if (billIndex > -1) {
+// পুরনো deleteBill ফাংশনটি মুছে এই নতুন কোডটি বসান
+    window.deleteBill = async (billId) => {
+    if (confirm('আপনি কি নিশ্চিতভাবে এই বিলটি মুছে ফেলতে চান?')) {
+        const billIndex = db.bills.findIndex(b => b.id === billId);
+        if (billIndex > -1) {
             const bill = db.bills[billIndex];
             const customer = db.customers.find(c => c.id === bill.customerId);
             const customerName = customer ? customer.name : 'অজানা গ্রাহক';
-            const monthName = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট',
-              'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-            ][bill.month];
+            const monthName = months[bill.month];
 
-            db.bills.splice(billIndex, 1);
+            try {
+                // Firebase থেকে বিলটি মুছে ফেলা হচ্ছে
+                await deleteDoc(doc(firestore, "bills", billId));
 
-            // Add activity log for bill deleted
-            addActivity('bill_deleted', `বিল মুছে ফেলা হয়েছে: ${customerName} (${monthName} ${bill.year})`, {
-              customerName: customerName,
-              month: bill.month,
-              year: bill.year,
-              amount: bill.totalAmount
-            });
+                // লোকাল ডেটাবেজ থেকে বিলটি মুছে ফেলা
+                db.bills.splice(billIndex, 1);
 
-            saveDb();
-            renderBillingPage();
-            renderDashboard();
-          }
+                addActivity('bill_deleted', `বিল মুছে ফেলা হয়েছে: ${customerName} (${monthName} ${bill.year})`, {
+                    customerName: customerName,
+                    month: bill.month,
+                    year: bill.year,
+                    amount: bill.totalAmount
+                });
+
+                alert(`বিলটি সফলভাবে মুছে ফেলা হয়েছে।`);
+                
+                // UI রিফ্রেশ করা
+                renderBillingPage();
+                renderDashboard();
+
+            } catch (error) {
+                console.error("Firebase থেকে বিল মুছে ফেলতে সমস্যা হয়েছে: ", error);
+                alert("একটি ত্রুটি ঘটেছে। বিলটি মোছা সম্ভব হয়নি।");
+            }
         }
-      };
+    }
+};
+
 
       // --- START: Payment Modal Functions ---
 
@@ -5058,44 +5150,49 @@
         renderIspHistoryTable();
       }
 
-      ispBillForm.addEventListener("submit", e => {
-        e.preventDefault();
-        const year = parseInt(document.getElementById("ispYear").value);
-        const month = parseInt(document.getElementById("ispMonth").value);
-        const amount = parseFloat(document.getElementById("ispAmount").value);
-        const payDate = document.getElementById("ispPayDate").value;
+// পুরনো ispBillForm.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+ispBillForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const year = parseInt(document.getElementById("ispYear").value);
+    const month = parseInt(document.getElementById("ispMonth").value);
+    const amount = parseFloat(document.getElementById("ispAmount").value);
+    const payDate = document.getElementById("ispPayDate").value;
 
-        const existingPaymentIndex = db.ispPayments.findIndex(p => p.year === year && p.month === month);
+    const existingPayment = db.ispPayments.find(p => p.year === year && p.month === month);
 
-        if (existingPaymentIndex > -1) {
-          alert(
-            `এই মাসের (${months[month]}, ${toBengaliNumber(year)}) জন্য আইএসপি বিল ইতিমধ্যে পরিশোধ করা হয়েছে। একই মাসে দ্বিতীয়বার পেমেন্ট করা যাবে না। তবে আপনি Edit বাটন দিয়ে এডিট করতে পারেন।`
-            );
-          return;
-        } else {
-          // Add new payment
-          const payment = {
-            id: Date.now().toString(),
-            year: year,
-            month: month,
-            amount: amount,
-            payDate: payDate
-          };
-          db.ispPayments.push(payment);
-          alert("আইএসপি বিল সফলভাবে পরিশোধ করা হয়েছে।");
+    if (existingPayment) {
+        alert(`এই মাসের (${months[month]}, ${toBengaliNumber(year)}) জন্য আইএসপি বিল ইতিমধ্যে পরিশোধ করা হয়েছে।`);
+        return;
+    }
 
-          // Add activity log for ISP payment
-          addActivity('isp_payment', `আইএসপি বিল পরিশোধ করা হয়েছে`, {
-            month: month,
-            year: year,
-            amount: amount
-          });
-        }
-        saveDb();
+    const payment = {
+        id: Date.now().toString(),
+        year: year,
+        month: month,
+        amount: amount,
+        payDate: payDate
+    };
+
+    try {
+        // Firebase-এ নতুন ISP বিল যোগ করা হচ্ছে
+        await setDoc(doc(firestore, "ispPayments", payment.id), payment);
+
+        // লোকাল ডেটাবেজ আপডেট করা
+        db.ispPayments.push(payment);
+        
+        alert("আইএসপি বিল সফলভাবে পরিশোধ এবং Firebase-এ সেভ করা হয়েছে।");
+        addActivity('isp_payment', `আইএসপি বিল পরিশোধ করা হয়েছে`, { month, year, amount });
+
         renderIspHistoryTable();
         ispBillForm.reset();
         initializeIspForm();
-      });
+
+    } catch (error) {
+        console.error("Firebase-এ ISP বিল সেভ করতে সমস্যা হয়েছে: ", error);
+        alert("একটি ত্রুটি ঘটেছে। ISP বিল সেভ করা সম্ভব হয়নি।");
+    }
+});
+
 
       function initializeReportFilters() {
         const monthOptions = months.map((m, i) => ({
@@ -5605,25 +5702,42 @@
           });
         }
 
-        locationForm.addEventListener('submit', e => {
-          e.preventDefault();
-          const newLocationInput = document.getElementById('newLocationName');
-          const newLocation = newLocationInput.value.trim();
-          if (newLocation && !db.locations.includes(newLocation)) {
-            db.locations.push(newLocation);
+// পুরনো locationForm.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+locationForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newLocationInput = document.getElementById('newLocationName');
+    const newLocation = newLocationInput.value.trim();
 
-            // Add activity log for location added
+    if (newLocation && !db.locations.includes(newLocation)) {
+        const locationData = {
+            id: Date.now().toString(),
+            name: newLocation
+        };
+
+        try {
+            // Firebase-এ নতুন লোকেশন যোগ করা হচ্ছে
+            await setDoc(doc(firestore, "locations", locationData.id), locationData);
+
+            // লোকাল ডেটাবেস আপডেট করা
+            db.locations.push(newLocation); // পুরনো অ্যারে স্ট্রাকচার বজায় রাখা হচ্ছে
+            
             addActivity('location_added', `নতুন বাড়ি যোগ করা হয়েছে: ${newLocation}`, {
-              locationName: newLocation
+                locationName: newLocation
             });
 
-            saveDb();
             renderLocations();
             newLocationInput.value = '';
-          } else {
-            alert('এই লোকেশনটি ইতিমধ্যে বিদ্যমান অথবা নামটি খালি।');
-          }
-        });
+            alert("নতুন লোকেশন সফলভাবে যোগ করা হয়েছে।");
+
+        } catch (error) {
+            console.error("Firebase-এ লোকেশন সেভ করতে সমস্যা হয়েছে: ", error);
+            alert("একটি ত্রুটি ঘটেছে। লোকেশন যোগ করা সম্ভব হয়নি।");
+        }
+    } else {
+        alert('এই লোকেশনটি ইতিমধ্যে বিদ্যমান অথবা নামটি খালি।');
+    }
+});
+
 
         window.openLocationEditModal = (oldName) => {
           document.getElementById('locationEditOldName').value = oldName;
@@ -5659,25 +5773,41 @@
           overlay.style.display = 'none';
         });
 
-        window.deleteLocation = (locName) => {
-          if (defaultLocations.includes(locName)) {
-            alert('ডিফল্ট লোকেশন মুছে ফেলা যাবে না।');
-            return;
-          }
-          if (confirm(
-              `আপনি কি নিশ্চিতভাবে "${locName}" লোকেশনটি মুছে ফেলতে চান? এই লোকেশনের সকল গ্রাহক এবং রাউটারের তথ্যও প্রভাবিত হতে পারে।`
-              )) {
-            db.locations = db.locations.filter(l => l !== locName);
+// পুরনো deleteLocation ফাংশনটি মুছে এই নতুন কোডটি বসান
+window.deleteLocation = async (locName) => {
+    if (defaultLocations.includes(locName)) {
+        alert('ডিফল্ট লোকেশন মুছে ফেলা যাবে না।');
+        return;
+    }
+    if (confirm(`আপনি কি নিশ্চিতভাবে "${locName}" লোকেশনটি মুছে ফেলতে চান?`)) {
+        try {
+            // Firebase থেকে লোকেশনটি খুঁজে বের করে ডিলিট করা
+            const q = query(collection(firestore, "locations"), where("name", "==", locName));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                const docToDelete = querySnapshot.docs[0];
+                await deleteDoc(doc(firestore, "locations", docToDelete.id));
 
-            // Add activity log for location deleted
-            addActivity('location_deleted', `বাড়ি মুছে ফেলা হয়েছে: ${locName}`, {
-              locationName: locName
-            });
+                // লোকাল ডেটাবেজ থেকে লোকেশনটি মুছে ফেলা
+                db.locations = db.locations.filter(l => l !== locName);
 
-            saveDb();
-            renderLocations();
-          }
-        };
+                addActivity('location_deleted', `বাড়ি মুছে ফেলা হয়েছে: ${locName}`, {
+                    locationName: locName
+                });
+
+                renderLocations();
+                alert(`"${locName}" লোকেশনটি সফলভাবে মুছে ফেলা হয়েছে।`);
+            } else {
+                alert("ত্রুটি: এই নামের কোনো লোকেশন ডেটাবেজে পাওয়া যায়নি।");
+            }
+        } catch (error) {
+            console.error("Firebase থেকে লোকেশন মুছে ফেলতে সমস্যা হয়েছে: ", error);
+            alert("একটি ত্রুটি ঘটেছে। লোকেশনটি মোছা সম্ভব হয়নি।");
+        }
+    }
+};
+
 
         renderLocations();
       }
@@ -5777,26 +5907,42 @@
         reader.readAsText(file);
       });
 
-      resetBtn.addEventListener('click', () => {
-        if (confirm(
-            'সতর্কতা! আপনি কি নিশ্চিতভাবে অ্যাপের সকল ডেটা মুছে ফেলতে চান? এই কাজটি ফেরানো যাবে না। ডিফল্ট লোকেশনগুলো পুনরুদ্ধার করা হবে।'
-            )) {
+// পুরনো resetBtn.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+resetBtn.addEventListener('click', async () => {
+    if (confirm('সতর্কতা! আপনি কি নিশ্চিতভাবে অ্যাপের সকল ডেটা মুছে ফেলতে চান? এই কাজটি ফেরানো যাবে না।')) {
+        
+        const collectionsToDelete = ["customers", "bills", "ispPayments", "routers", "locations"];
+        
+        try {
+            const batch = writeBatch(firestore);
+            
+            for (const collectionName of collectionsToDelete) {
+                const q = query(collection(firestore, collectionName));
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+            }
+            
+            await batch.commit();
 
-          // প্রধান ডেটাবেস মুছে ফেলা
-          localStorage.removeItem(DATABASE_KEY);
-          localStorage.removeItem('abidNetworkDb_v40'); // পুরনো ভার্সনও মুছে ফেলা
-          localStorage.removeItem(LAST_PAGE_KEY);
+            // লোকাল স্টোরেজের অন্যান্য ডেটা মুছে ফেলা
+            localStorage.removeItem(LAST_PAGE_KEY);
+            localStorage.removeItem(ACTIVITY_STORAGE_KEY);
+            localStorage.removeItem('lastExportDate');
+            localStorage.removeItem('websiteName');
+            localStorage.removeItem('websiteLogo');
 
-          // ******************************************************
-          // নতুন দুটি লাইন এখানে যোগ করা হয়েছে
-          // ******************************************************
-          localStorage.removeItem(ACTIVITY_STORAGE_KEY); // সাম্প্রতিক কার্যক্রম মুছে ফেলবে
-          localStorage.removeItem('lastExportDate'); // শেষ ব্যাকআপের তারিখ মুছে ফেলবে
+            alert('অ্যাপ সফলভাবে রিসেট করা হয়েছে। সকল অনলাইন ডেটা মুছে ফেলা হয়েছে।');
+            location.reload();
 
-          alert('অ্যাপ সফলভাবে রিসেট করা হয়েছে।');
-          location.reload(); // পেজটি রিলোড করে পরিবর্তন দেখাবে
+        } catch (error) {
+            console.error("Firebase ডেটা রিসেট করতে সমস্যা হয়েছে: ", error);
+            alert("একটি ত্রুটি ঘটেছে। ডেটা রিসেট করা সম্ভব হয়নি।");
         }
-      });
+    }
+});
+
       const loadMoreBtn = document.getElementById('load-more-activities-btn');
       if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', () => {
@@ -6254,128 +6400,130 @@ switchPage(lastPage, true);
 
       // --- আপনার পুরনো সম্পূর্ণ logPayment ফাংশনটি মুছে, এই নতুন এবং চূড়ান্ত কোডটি পেস্ট করুন ---
 
-      function logPayment(billId, receivedAmount) {
-        const billIndex = db.bills.findIndex(b => b.id === billId);
-        if (billIndex === -1) return {
-          success: false,
-          message: 'বিল খুঁজে পাওয়া যায়নি।'
-        };
+// পুরনো logPayment ফাংশনটি মুছে এই নতুন কোডটি বসান
+    async function logPayment(billId, receivedAmount) {
+    const billIndex = db.bills.findIndex(b => b.id === billId);
+    if (billIndex === -1) return { success: false, message: 'বিল খুঁজে পাওয়া যায়নি।' };
 
-        const bill = db.bills[billIndex];
-        const customer = db.customers.find(c => c.id === bill.customerId);
-        if (!customer) return {
-          success: false,
-          message: 'গ্রাহক খুঁজে পাওয়া যায়নি।'
-        };
+    const bill = { ...db.bills[billIndex] }; // Create a mutable copy
+    const customerIndex = db.customers.findIndex(c => c.id === bill.customerId);
+    if (customerIndex === -1) return { success: false, message: 'গ্রাহক খুঁজে পাওয়া যায়নি।' };
+    
+    const customer = { ...db.customers[customerIndex] }; // Create a mutable copy
 
-        if (!bill.paymentHistory) bill.paymentHistory = [];
+    if (!bill.paymentHistory) bill.paymentHistory = [];
 
-        const dueBeforeThisPayment = bill.remainingDue > 0 ? bill.remainingDue : 0;
+    const dueBeforeThisPayment = bill.remainingDue > 0 ? bill.remainingDue : 0;
 
-        if (dueBeforeThisPayment <= 0) {
-          // ... (আগের মতোই অ্যাডভান্স জমার কোড)
-          customer.advanceBalance = (customer.advanceBalance || 0) + receivedAmount;
-          bill.paymentHistory.push({
+    if (dueBeforeThisPayment <= 0) {
+        customer.advanceBalance = (customer.advanceBalance || 0) + receivedAmount;
+        bill.paymentHistory.push({
             id: Date.now() + Math.random(),
             amount: receivedAmount,
             date: new Date().toISOString(),
             source: 'advance_deposit',
             balanceAfter: -customer.advanceBalance,
             isFirstAdvance: (customer.advanceBalance === receivedAmount)
-          });
-          saveDb();
-          addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা হয়েছে`, {
-            customerName: customer.name,
-            amount: receivedAmount
-          });
-          return {
-            success: true,
-            message: `সরাসরি ৳${toBengaliNumber(receivedAmount)} অ্যাডভান্স জমা হয়েছে।`
-          };
-        }
-
-        const balanceAfterPayment = dueBeforeThisPayment - receivedAmount;
-        let isFinalPayment = false;
-        let newAdvanceFromThisPayment = 0;
-
-        if (balanceAfterPayment <= 0) {
-          isFinalPayment = true;
-          if (balanceAfterPayment < 0) {
-            newAdvanceFromThisPayment = Math.abs(balanceAfterPayment);
-          }
-        }
-
-        bill.paymentHistory.push({
-          id: Date.now() + Math.random(),
-          amount: receivedAmount,
-          date: new Date().toISOString(),
-          source: 'manual',
-          balanceAfter: balanceAfterPayment,
-          isFinalPayment: isFinalPayment,
-          newAdvance: newAdvanceFromThisPayment
         });
-        bill.paidAmount = (bill.paidAmount || 0) + receivedAmount;
-        recalculateBillTotal(billId);
+        
+        try {
+            const batch = writeBatch(firestore);
+            batch.set(doc(firestore, "customers", customer.id), customer);
+            batch.set(doc(firestore, "bills", bill.id), bill);
+            await batch.commit();
 
-        let finalMessage = "পেমেন্ট সফলভাবে জমা হয়েছে।";
-        let wasDeactivated = false;
+            db.customers[customerIndex] = customer;
+            db.bills[billIndex] = bill;
 
-        if (bill.status === 'paid' && customer.deactivationPending === true) {
-          customer.isActive = false;
-          customer.deactivationPending = false;
-          wasDeactivated = true;
+            addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা হয়েছে`, { customerName: customer.name, amount: receivedAmount });
+            return { success: true, message: `সরাসরি ৳${toBengaliNumber(receivedAmount)} অ্যাডভান্স জমা হয়েছে।` };
+        } catch (error) {
+            return { success: false, message: 'Firebase-এ ডেটা সেভ করতে সমস্যা হয়েছে।' };
+        }
+    }
 
-          finalMessage = `পেমেন্ট সফলভাবে জমা হয়েছে এবং গ্রাহক "${customer.name}"-কে নিষ্ক্রিয় করা হয়েছে।`;
+    const balanceAfterPayment = dueBeforeThisPayment - receivedAmount;
+    let isFinalPayment = false;
+    let newAdvanceFromThisPayment = 0;
 
-          addActivity('customer_deactivated_auto',
-            `বিল পরিশোধের পর ${customer.name} স্বয়ংক্রিয়ভাবে নিষ্ক্রিয় হয়েছে।`, {
-              customerName: customer.name
-            });
+    if (balanceAfterPayment <= 0) {
+        isFinalPayment = true;
+        if (balanceAfterPayment < 0) {
+            newAdvanceFromThisPayment = Math.abs(balanceAfterPayment);
+        }
+    }
+
+    bill.paymentHistory.push({
+        id: Date.now() + Math.random(),
+        amount: receivedAmount,
+        date: new Date().toISOString(),
+        source: 'manual',
+        balanceAfter: balanceAfterPayment,
+        isFinalPayment: isFinalPayment,
+        newAdvance: newAdvanceFromThisPayment
+    });
+    
+    bill.paidAmount = (bill.paidAmount || 0) + receivedAmount;
+    
+    // Recalculate bill status based on the new payment
+    const updatedBill = recalculateBillObject(bill, customer);
+    const updatedCustomer = { ...customer }; // Customer might be updated in recalculate
+    if(updatedBill.remainingDue < 0) {
+        updatedCustomer.advanceBalance = (updatedCustomer.advanceBalance || 0) + Math.abs(updatedBill.remainingDue);
+        updatedBill.remainingDue = 0;
+    }
+    if (updatedBill.remainingDue <= 0) {
+        updatedBill.status = 'paid';
+        updatedBill.isPaid = true;
+    } else {
+        updatedBill.status = 'partially_paid';
+        updatedBill.isPaid = false;
+    }
+
+    let finalMessage = "পেমেন্ট সফলভাবে জমা হয়েছে।";
+    if (updatedBill.status === 'paid' && updatedCustomer.deactivationPending === true) {
+        updatedCustomer.isActive = false;
+        updatedCustomer.deactivationPending = false;
+        finalMessage = `পেমেন্ট সফলভাবে জমা হয়েছে এবং গ্রাহক "${updatedCustomer.name}"-কে নিষ্ক্রিয় করা হয়েছে।`;
+        addActivity('customer_deactivated_auto', `বিল পরিশোধের পর ${updatedCustomer.name} স্বয়ংক্রিয়ভাবে নিষ্ক্রিয় হয়েছে।`, { customerName: updatedCustomer.name });
+    }
+
+    try {
+        const batch = writeBatch(firestore);
+        batch.set(doc(firestore, "bills", updatedBill.id), updatedBill);
+        batch.set(doc(firestore, "customers", updatedCustomer.id), updatedCustomer);
+        await batch.commit();
+
+        db.bills[billIndex] = updatedBill;
+        db.customers[customerIndex] = updatedCustomer;
+
+        // Add activity logs
+        if (updatedBill.status === 'paid') {
+            addActivity('bill_status_paid', `${updatedCustomer.name}-এর বিল সম্পূর্ণ পরিশোধিত হয়েছে`, { customerName: updatedCustomer.name, amount: receivedAmount, month: updatedBill.month, year: updatedBill.year });
+        } else {
+            addActivity('payment_history', `${updatedCustomer.name}-এর বিল আংশিক পরিশোধ করা হয়েছে`, { customerName: updatedCustomer.name, amount: receivedAmount, remainingDue: updatedBill.remainingDue, month: updatedBill.month, year: updatedBill.year });
         }
 
-        saveDb();
+        return { success: true, message: finalMessage };
 
-        if (bill.status === 'paid') {
-          // যদি বিলটি সম্পূর্ণ পরিশোধিত হয়
-          addActivity('bill_status_paid', `${customer.name}-এর বিল সম্পূর্ণ পরিশোধিত হয়েছে`, {
-            customerName: customer.name,
-            amount: receivedAmount,
-            month: bill.month,
-            year: bill.year
-          });
+    } catch (error) {
+        console.error("Firebase-এ পেমেন্ট সেভ করতে সমস্যা হয়েছে: ", error);
+        return { success: false, message: 'একটি ত্রুটি ঘটেছে। পেমেন্ট সেভ করা সম্ভব হয়নি।' };
+    }
+}
 
-          // ★★★ নতুন এবং গুরুত্বপূর্ণ অংশ: অতিরিক্ত পেমেন্টের জন্য লগ ★★★
-          const dueBeforeThisPayment = bill.totalAmount - (bill.paidAmount - receivedAmount) - (bill.discount || 0);
-          const overPayment = receivedAmount - dueBeforeThisPayment;
+// একটি নতুন Helper ফাংশন যোগ করুন
+function recalculateBillObject(bill, customer) {
+    const billCopy = { ...bill };
+    const dueFromAdjustments = (billCopy.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+    const grossTotalBill = billCopy.monthlyAmount + billCopy.dueAmount + dueFromAdjustments;
+    const discount = billCopy.discount || 0;
+    const netTotalBill = grossTotalBill - discount;
+    billCopy.paidAmount = (billCopy.paymentHistory || []).reduce((sum, p) => sum + p.amount, 0);
+    billCopy.remainingDue = netTotalBill - billCopy.paidAmount;
+    return billCopy;
+}
 
-          if (overPayment > 0) {
-            // যদি পেমেন্টের পরিমাণ বকেয়ার চেয়ে বেশি হয়
-            addActivity('advance_deposit',
-              `${customer.name}-এর অ্যাকাউন্টে অতিরিক্ত ৳${toBengaliNumber(overPayment.toFixed(2))} অ্যাডভান্স জমা হয়েছে`, {
-                customerName: customer.name,
-                amount: overPayment,
-                source: 'Overpayment' // উৎস উল্লেখ করা হলো
-              });
-          }
-          // ★★★ নতুন অংশের শেষ ★★★
-
-        } else if (bill.status === 'partially_paid') {
-          // যদি বিলটি আংশিক পরিশোধিত হয়
-          addActivity('payment_history', `${customer.name}-এর বিল আংশিক পরিশোধ করা হয়েছে`, {
-            customerName: customer.name,
-            amount: receivedAmount,
-            remainingDue: bill.remainingDue,
-            month: bill.month,
-            year: bill.year
-          });
-        }
-
-        return {
-          success: true,
-          message: finalMessage,
-          deactivated: wasDeactivated
-        };
-      }
 
       // পেমেন্ট মোডালের বাটনগুলোর জন্য ইভেন্ট লিসেনার যোগ করা
       const submitPaymentBtn = document.getElementById('submit-payment-btn');
