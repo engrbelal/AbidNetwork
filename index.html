@@ -1977,7 +1977,127 @@
     .status-partially-paid .status {
       color: #b58900;
     }
-
+/* --- Final and Updated Router Profile Window Styles --- */
+    .router-profile-window {
+        background-color: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 380px;
+        padding: 25px;
+        box-sizing: border-box;
+        position: relative;
+    }
+    .router-profile-header {
+        text-align: center;
+        margin-bottom: 25px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 15px;
+    }
+    .router-profile-header h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin: 0;
+    }
+    .router-profile-window .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        font-weight: bold;
+        color: #A0AEC0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .router-profile-window .close-btn:hover {
+        color: #E53E3E;
+        transform: scale(1.1);
+    }
+    .router-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 25px;
+    }
+    .router-info-item {
+        background-color: var(--bg-light, #F7FAFC);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer; /* Makes it look clickable */
+        transition: all 0.2s ease-in-out; /* Smooth transition for all changes */
+        -webkit-tap-highlight-color: transparent; /* Removes the default blue tap highlight on mobile */
+    }
+    .router-info-item:hover {
+        transform: translateY(-3px); /* Lifts the box up slightly on hover */
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); /* Adds a subtle shadow */
+        background-color: #ffffff; /* Changes background to white */
+    }
+    .router-info-item:active {
+        transform: translateY(0); /* Returns the box to its original position on click */
+        background-color: #e9ecef; /* Gives a pressed-down look */
+    }
+    .router-info-item strong {
+        color: #6c757d;
+        font-size: 11px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .router-info-item span {
+        color: var(--text-color);
+        font-size: 13px;
+        font-weight: 600;
+        word-break: break-all;
+    }
+    .router-info-item.full-width-item {
+        grid-column: 1 / -1;
+    }
+    .router-info-item .icon {
+        font-size: 14px;
+        color: var(--secondary-color);
+    }
+    .router-action-buttons {
+        display: flex;
+        gap: 12px;
+    }
+    .router-action-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .router-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .router-action-btn.btn-access {
+        background-color: var(--secondary-color);
+        color: white;
+    }
+    .router-action-btn.btn-edit {
+        background-color: var(--bg-light, #F7FAFC);
+        color: var(--primary-color);
+        border: 1px solid var(--border-color);
+    }
+    
   </style>
 </head>
 
@@ -2911,33 +3031,62 @@
     </div>
   </div>
   </div>
-  <div class="router-modal-overlay" id="routerModal">
-    <div class="router-modal-content">
-      <div class="router-modal-header">
-        <h2 id="modal-title"></h2><button class="router-modal-close" id="routerModalCloseBtn">&times;</button>
-      </div>
-      <div class="router-modal-body">
-        <div id="modal-router-image-container" style="text-align: center; margin-bottom: 15px; display: none;">
-          <img id="modal-router-image"
-            style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #E2E8F0;"
-            alt="রাউটারের ছবি">
+  <!-- New, Modern Router Profile Window -->
+<div class="modal" id="routerProfileModal">
+    <div class="router-profile-window">
+        
+        <!-- Header with Name -->
+        <div class="router-profile-header">
+            <h2 id="router-profile-name"></h2>
         </div>
-        <p><strong>মডেল:</strong> <span id="modal-model"></span></p>
-        <p><strong>আইপি অ্যাড্রেস:</strong> <span id="modal-ip"></span></p>
-        <p><strong>ম্যাক অ্যাড্রেস:</strong> <span id="modal-mac-address"></span></p>
-        <p><strong>দূরত্ব:</strong> <span id="modal-distance"></span> মিটার</p>
-        <p><strong>পাওয়ার স্পেসিফিকেশন:</strong> <span id="modal-power-spec"></span></p>
-        <p><strong>পাসওয়ার্ড:</strong> <span id="modal-password"></span></p>
-        <p><strong>লোকেশন:</strong> <span id="modal-location"></span></p>
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <a href="#" id="modal-access-link" class="access-btn" target="_blank" style="flex: 1;">রাউটার অ্যাক্সেস
-            করুন</a>
-          <button id="modal-edit-router-btn" class="btn btn-submit"
-            style="display: block; margin-top: 25px; padding: 12px; background-color: var(--secondary-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; transition: background-color 0.2s; border: none; box-sizing: content-box; width: auto; min-width: 60px;">Edit</button>
+        <button class="close-btn" id="router-profile-close-btn">&times;</button>
+
+        <!-- Grid for Router Information -->
+        <div class="router-info-grid">
+            <div class="router-info-item">
+                <strong><span class="icon">🏷️</span> মডেল</strong>
+                <span id="router-profile-model"></span>
+            </div>
+            <div class="router-info-item">
+                <strong><span class="icon">📍</span> লোকেশন</strong>
+                <span id="router-profile-location"></span>
+            </div>
+            <div class="router-info-item full-width-item">
+                <strong><span class="icon">🌐</span> আইপি অ্যাড্রেস</strong>
+                <span id="router-profile-ip"></span>
+            </div>
+            <div class="router-info-item full-width-item">
+                <strong><span class="icon">💻</span> ম্যাক অ্যাড্রেস</strong>
+                <span id="router-profile-mac"></span>
+            </div>
+            <div class="router-info-item">
+                <strong><span class="icon">📏</span> দূরত্ব</strong>
+                <span id="router-profile-distance"></span>
+            </div>
+            <div class="router-info-item">
+                <strong><span class="icon">⚡</span> পাওয়ার</strong>
+                <span id="router-profile-power"></span>
+            </div>
+            <div class="router-info-item full-width-item">
+                <strong><span class="icon">🔑</span> পাসওয়ার্ড</strong>
+                <span id="router-profile-password"></span>
+            </div>
         </div>
-      </div>
+
+        <!-- Action Buttons -->
+        <div class="router-action-buttons">
+            <a href="#" id="router-profile-access-btn" class="router-action-btn btn-access" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+                <span>অ্যাক্সেস</span>
+            </a>
+            <button id="router-profile-edit-btn" class="router-action-btn btn-edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
+                <span>এডিট</span>
+            </button>
+        </div>
     </div>
-  </div>
+</div>
+
   <div class="modal" id="locationEditModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -3699,51 +3848,48 @@
         };
 
         // ★★★ নতুন এবং নিরাপদ কোড (সতর্কবার্তা সহ) ★★★
-        routerListContainer.onclick = (e) => {
-          // রাউটার মুছে ফেলার বাটন
-          if (e.target.classList.contains('router-delete-btn')) {
-            const routerId = e.target.dataset.routerId;
-            const router = db.routers.find(r => r.id == routerId);
-            if (!router) return;
+// এই সম্পূর্ণ ব্লকটি কপি করে পুরনোটির জায়গায় পেস্ট করুন
+routerListContainer.onclick = (e) => {
+    // রাউটার মুছে ফেলার বাটন
+    if (e.target.classList.contains('router-delete-btn')) {
+        const routerId = e.target.dataset.routerId;
+        const router = db.routers.find(r => r.id == routerId);
+        if (!router) return;
 
-            // ★★★ সতর্কবার্তা যোগ করা হয়েছে ★★★
-            if (confirm(`আপনি কি নিশ্চিতভাবে "${router.name}" রাউটারটি মুছে ফেলতে চান?`)) {
-              const routerName = router.name;
-
-              db.routers = db.routers.filter(r => r.id != routerId);
-
-              addActivity('router_deleted', `রাউটার মুছে ফেলা হয়েছে: ${routerName}`, {
+        if (confirm(`আপনি কি নিশ্চিতভাবে "${router.name}" রাউটারটি মুছে ফেলতে চান?`)) {
+            const routerName = router.name;
+            db.routers = db.routers.filter(r => r.id != routerId);
+            addActivity('router_deleted', `রাউটার মুছে ফেলা হয়েছে: ${routerName}`, {
                 routerName: routerName,
                 routerId: routerId
-              });
+            });
+            saveAndRenderRouters();
+            alert(`রাউটার "${routerName}" সফলভাবে মুছে ফেলা হয়েছে।`);
+        }
+    }
+    // রাউটারের বিস্তারিত দেখার জন্য ক্লিক
+    else if (e.target.closest('.router-item-content')) {
+        const routerId = e.target.closest('.router-item-content').dataset.routerId;
+        const routerData = db.routers.find(r => r.id == routerId);
+        if (routerData) {
+            // নতুন প্রোফাইল উইন্ডোর জন্য ডেটা সেট করা
+            document.getElementById('router-profile-name').textContent = routerData.name;
+            document.getElementById('router-profile-model').textContent = routerData.model || 'N/A';
+            document.getElementById('router-profile-location').textContent = routerData.location || 'N/A';
+            document.getElementById('router-profile-ip').textContent = routerData.ip || 'N/A';
+            document.getElementById('router-profile-mac').textContent = routerData.macAddress || 'N/A';
+            document.getElementById('router-profile-distance').textContent = `${routerData.distanceMeters || 'N/A'} মিটার`;
+            document.getElementById('router-profile-power').textContent = routerData.powerSpec || 'N/A';
+            document.getElementById('router-profile-password').textContent = routerData.password || 'N/A';
 
-              saveAndRenderRouters();
-              alert(`রাউটার "${routerName}" সফলভাবে মুছে ফেলা হয়েছে।`);
-            }
-          }
-          // রাউটারের বিস্তারিত দেখার জন্য ক্লিক
-          else if (e.target.closest('.router-item-content')) {
-            const routerId = e.target.closest('.router-item-content').dataset.routerId;
-            const routerData = db.routers.find(r => r.id == routerId);
-            if (routerData) {
-              // ... (এই অংশটি আগের মতোই থাকবে, কোনো পরিবর্তন নেই)
-              document.getElementById('modal-title').textContent = routerData.name;
-              document.getElementById('modal-model').textContent = routerData.model;
-              document.getElementById('modal-location').textContent = routerData.location;
-              document.getElementById('modal-distance').textContent = routerData.distanceMeters || routerData
-                .distance || 'N/A';
-              document.getElementById('modal-ip').textContent = routerData.ip;
-              document.getElementById('modal-mac-address').textContent = routerData.macAddress || 'N/A';
-              document.getElementById('modal-power-spec').textContent = routerData.powerSpec || 'N/A';
-              document.getElementById('modal-password').textContent = routerData.password || 'N/A';
-              document.getElementById('modal-access-link').href = `http://${routerData.ip}`;
+            const accessBtn = document.getElementById('router-profile-access-btn');
+            accessBtn.href = `http://${routerData.ip}`;
 
-              const imageContainer = document.getElementById('modal-router-image-container');
-              imageContainer.style.display = 'none';
-
-              const editBtn = document.getElementById('modal-edit-router-btn');
-              editBtn.onclick = () => {
-                routerModal.classList.remove('active');
+            const editBtn = document.getElementById('router-profile-edit-btn');
+            editBtn.onclick = () => {
+                document.getElementById('routerProfileModal').classList.remove('active');
+                overlay.style.display = 'none';
+                // এডিট করার জন্য ফর্ম পূরণ করার পুরনো লজিক
                 document.getElementById('routerId').value = routerData.id;
                 document.getElementById('routerName').value = routerData.name;
                 document.getElementById('routerModel').value = routerData.model;
@@ -3756,20 +3902,23 @@
                 setMacAddress('routerMacContainer', routerData.macAddress || '');
                 formContainer.classList.add('active');
                 toggleFormBtn.textContent = 'ফর্ম লুকান';
-                formContainer.scrollIntoView({
-                  behavior: 'smooth'
-                });
-              };
+                formContainer.scrollIntoView({ behavior: 'smooth' });
+            };
 
-              routerModal.classList.add('active');
-            }
-          }
-        };
+            // নতুন মডালটি দেখানো
+            document.getElementById('routerProfileModal').classList.add('active');
+            overlay.style.display = 'block';
+        }
+    }
+};
+// নতুন রাউটার প্রোফাইল মডাল বন্ধ করার জন্য ইভেন্ট লিসেনার
+const routerProfileModal = document.getElementById('routerProfileModal');
+const routerProfileCloseBtn = document.getElementById('router-profile-close-btn');
 
-        modalCloseBtn.onclick = () => routerModal.classList.remove('active');
-        routerModal.onclick = (e) => {
-          if (e.target === routerModal) routerModal.classList.remove('active');
-        };
+routerProfileCloseBtn.onclick = () => {
+    routerProfileModal.classList.remove('active');
+    overlay.style.display = 'none';
+};
 
         renderRouters();
       }
@@ -5165,7 +5314,7 @@
           const netIncome = totalRevenue - ispPaid;
       
           const companyName = localStorage.getItem('websiteName') || 'Abid Network';
-          const companyLogo = localStorage.getItem('websiteLogo') || 'https://raw.githubusercontent.com/engrbelal/AbidNetwork/main/logo.png'; // Default logo
+          const companyLogo = localStorage.getItem('websiteLogo') || 'https://i.ibb.co/Lz0dGqC/router-icon.png'; // Default logo
       
           // Generate HTML for house-wise revenue table
           const houseReportsHtml = db.locations.map(houseName => {
@@ -5359,7 +5508,7 @@
             .sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)); // Sort by most recent first
     
         const companyName = localStorage.getItem('websiteName') || 'Abid Network';
-        const companyLogo = localStorage.getItem('websiteLogo') || 'https://raw.githubusercontent.com/engrbelal/AbidNetwork/main/logo.png';
+        const companyLogo = localStorage.getItem('websiteLogo') || 'https://i.ibb.co/Lz0dGqC/router-icon.png';
     
         const billingHistoryHtml = customerBills.map(bill => {
             let statusClass, statusText;
