@@ -5165,7 +5165,7 @@
           const netIncome = totalRevenue - ispPaid;
       
           const companyName = localStorage.getItem('websiteName') || 'Abid Network';
-          const companyLogo = localStorage.getItem('websiteLogo') || 'https://i.ibb.co/Lz0dGqC/router-icon.png'; // Default logo
+          const companyLogo = localStorage.getItem('websiteLogo') || 'https://raw.githubusercontent.com/engrbelal/AbidNetwork/main/logo.png'; // Default logo
       
           // Generate HTML for house-wise revenue table
           const houseReportsHtml = db.locations.map(houseName => {
@@ -5359,7 +5359,7 @@
             .sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month)); // Sort by most recent first
     
         const companyName = localStorage.getItem('websiteName') || 'Abid Network';
-        const companyLogo = localStorage.getItem('websiteLogo') || 'https://i.ibb.co/Lz0dGqC/router-icon.png';
+        const companyLogo = localStorage.getItem('websiteLogo') || 'https://raw.githubusercontent.com/engrbelal/AbidNetwork/main/logo.png';
     
         const billingHistoryHtml = customerBills.map(bill => {
             let statusClass, statusText;
