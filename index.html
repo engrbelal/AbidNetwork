@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Abid Network</title>
 <!-- Favicon using logo.png -->
-<link rel="icon" href="/AbidNetwork/logo.png" type="image/png">
-<link rel="apple-touch-icon" href="/AbidNetwork/logo.png">
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="apple-touch-icon" href="Logo.png">
   <style>
     :root {
       --primary-color: #4A5568;
@@ -612,15 +612,6 @@
       text-align: center;
     }
 
-    .dashboard-summary-grid {
-      display: grid !important;
-      grid-template-columns: repeat(2, 1fr) !important;
-      grid-template-rows: repeat(2, 1fr) !important;
-      gap: 15px !important;
-      max-width: 500px !important;
-      margin: 0 auto !important;
-    }
-
     .dashboard-summary-card {
       background: #f8f9fa !important;
       border: 1px solid #dee2e6 !important;
@@ -1094,99 +1085,6 @@
       background-color: #FED7D7;
     }
 
-    .router-modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1005;
-      padding: 15px;
-      box-sizing: border-box;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .router-modal-overlay.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    .router-modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 450px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-      transform: scale(0.95);
-      transition: transform 0.3s ease;
-      max-height: 90vh;
-      overflow-y: auto;
-      /* Added for mobile responsiveness */
-    }
-
-    .router-modal-overlay.active .router-modal-content {
-      transform: scale(1);
-    }
-
-    .router-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-
-    .router-modal-header h2 {
-      font-size: 20px;
-      margin: 0;
-      color: var(--secondary-color);
-    }
-
-    .router-modal-close {
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: #A0AEC0;
-      transition: color 0.2s;
-    }
-
-    .router-modal-close:hover {
-      color: var(--text-color);
-    }
-
-    .router-modal-body table {
-      width: 100%;
-      text-align: left;
-      border-collapse: collapse;
-    }
-
-    .router-modal-body th,
-    .router-modal-body td {
-      padding: 10px 4px;
-      border-bottom: 1px solid #F7FAFC;
-    }
-
-    .router-modal-body th {
-      width: 140px;
-      font-weight: 500;
-      color: #718096;
-      font-size: 13px;
-    }
-
-    .router-modal-body td {
-      font-weight: 600;
-      font-size: 14px;
-    }
-
     .access-btn {
       display: block;
       margin-top: 25px;
@@ -1255,12 +1153,6 @@
       border-color: var(--secondary-color);
     }
 
-    /* UPDATED Styles for Customer Profile Modal (v4.1) */
-    #customerProfileModal.modal {
-      max-width: 550px;
-      z-index: 1004;
-    }
-
     .profile-modal-body {
       max-height: 80vh;
       overflow-y: auto;
@@ -1316,49 +1208,7 @@
       font-size: 13px;
     }
 
-    .edit-btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      margin-left: 10px;
-    }
-
-    .edit-btn:hover {
-      background: #2563eb;
-    }
-
-    .router-edit-btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 10px;
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      z-index: 10;
-    }
-
-    .router-edit-btn:hover {
-      background: #2563eb;
-    }
-
     .router-item {
-      position: relative;
-      padding: 15px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      background: #f9f9f9;
-    }
-
-    .isp-bill-item {
       position: relative;
       padding: 15px;
       margin: 10px 0;
@@ -1486,18 +1336,6 @@
         padding: 15px;
       }
 
-      .router-modal-content {
-        padding: 20px;
-      }
-
-      .router-modal-header h2 {
-        font-size: 18px;
-      }
-
-      .router-modal-body th {
-        width: 110px;
-      }
-
       .router-form-container {
         padding: 10px;
       }
@@ -1511,254 +1349,10 @@
       }
     }
 
-    @media (max-width: 375px) {
-
-      .router-modal-body th,
-      .router-modal-body td {
-        font-size: 13px;
-        padding: 8px 2px;
-      }
-    }
-
-    /* Payment Modal Styles */
-    .payment-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1004;
-      padding: 15px;
-      box-sizing: border-box;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .payment-modal.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    .payment-modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-      transform: scale(0.95);
-      transition: transform 0.3s ease;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .payment-modal.active .payment-modal-content {
-      transform: scale(1);
-    }
-
-    .payment-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #E2E8F0;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-
-    .payment-modal-header h2 {
-      font-size: 18px;
-      margin: 0;
-      color: var(--primary-color);
-    }
-
-    .payment-modal-close {
-      font-size: 24px;
-      font-weight: bold;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: #A0AEC0;
-      transition: color 0.2s;
-    }
-
-    .payment-modal-close:hover {
-      color: var(--text-color);
-    }
-
-    .payment-modal-body {
-      margin-bottom: 20px;
-    }
-
-    .payment-info {
-      background: #F7FAFC;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border-left: 4px solid var(--secondary-color);
-    }
-
-    .payment-info h4 {
-      margin: 0 0 8px 0;
-      color: var(--primary-color);
-      font-size: 14px;
-    }
-
-    .payment-info p {
-      margin: 4px 0;
-      font-size: 13px;
-      color: var(--text-color);
-    }
-
-    .payment-amount-input {
-      margin-bottom: 20px;
-    }
-
-    .payment-amount-input label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: var(--primary-color);
-      font-size: 14px;
-    }
-
-    .payment-amount-input input {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #E2E8F0;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      text-align: center;
-      box-sizing: border-box;
-      transition: border-color 0.2s;
-    }
-
-    .payment-amount-input input:focus {
-      outline: none;
-      border-color: var(--secondary-color);
-    }
-
-    .payment-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    .payment-btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .payment-btn-submit {
-      background-color: var(--button-bg);
-      color: white;
-    }
-
-    .payment-btn-submit:hover {
-      background-color: var(--button-hover-bg);
-      transform: translateY(-1px);
-    }
-
-    .payment-btn-cancel {
-      background-color: #E2E8F0;
-      color: var(--text-color);
-    }
-
-    .payment-btn-cancel:hover {
-      background-color: #CBD5E0;
-    }
-
     /* Status styles for partially paid bills */
     .status-partially-paid {
       color: var(--pending-color);
       font-weight: 600;
-    }
-
-    /* Adjust button in customer profile */
-    .profile-adjust-btn {
-      background-color: var(--accent-color);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 15px;
-    }
-
-    .profile-adjust-btn:hover {
-      background-color: #6B46C1;
-      transform: translateY(-1px);
-    }
-
-    /* Payment History Styles */
-    .payment-history-section {
-      margin-top: 20px;
-      border-top: 1px solid #E2E8F0;
-      padding-top: 20px;
-    }
-
-    .payment-history-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--primary-color);
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .payment-history-list {
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #E2E8F0;
-      border-radius: 6px;
-      background: #F7FAFC;
-    }
-
-    .payment-history-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 15px;
-      border-bottom: 1px solid #E2E8F0;
-      font-size: 13px;
-    }
-
-    .payment-history-item:last-child {
-      border-bottom: none;
-    }
-
-    .payment-history-item:hover {
-      background: #EDF2F7;
-    }
-
-    .payment-history-date {
-      color: #718096;
-      font-size: 12px;
-    }
-
-    .payment-history-amount {
-      font-weight: 600;
-      color: var(--paid-color);
-    }
-
-    .payment-history-empty {
-      text-align: center;
-      padding: 20px;
-      color: #A0AEC0;
-      font-style: italic;
     }
 
     /* নতুন সিম্পল প্রোফাইল বাটনের জন্য স্টাইল */
@@ -2097,7 +1691,205 @@
         color: var(--primary-color);
         border: 1px solid var(--border-color);
     }
-    
+
+/* FINAL, COMPLETE & FULLY UPDATED CSS FOR PAYMENT MODAL */
+/* --- Main Modal Overlay --- */
+  .payment-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1004;
+      padding: 15px;
+      box-sizing: border-box;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+  }
+  .payment-modal.active {
+      display: flex;
+      opacity: 1;
+  }
+  
+  /* --- Hide the Original, Unused Modal Content Wrapper --- */
+  .payment-modal .payment-modal-content {
+      display: none !important;
+  }
+  
+  /* --- The Main Window Design (action-window) --- */
+  .payment-modal .action-window {
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      width: calc(100% - 20px); /* Responsive width with padding */
+      max-width: 400px; /* Compact and clean max-width */
+      box-sizing: border-box;
+      max-height: 90vh; /* Vertical fit for all screens */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+  }
+  .payment-modal.active .action-window {
+      transform: scale(1);
+  }
+  
+  /* --- Window Header --- */
+  .payment-modal .window-header {
+      text-align: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color, #E2E8F0);
+      flex-shrink: 0;
+  }
+  .payment-modal .window-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-color, #4A5568);
+      margin: 0;
+  }
+  .payment-modal .payment-modal-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      font-weight: bold;
+      color: #A0AEC0;
+      cursor: pointer;
+      padding: 5px;
+      z-index: 10;
+  }
+  
+  /* --- Scrollable Window Body --- */
+  .payment-modal .window-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex-grow: 1;
+  }
+  
+  /* --- Bill Info Box --- */
+  .payment-modal .bill-info-box {
+      background-color: var(--bg-light, #F7FAFC);
+      border: 1px solid var(--border-color, #E2E8F0);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 13px;
+  }
+  .payment-modal .bill-info-box .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center; /* Vertically align items */
+      padding: 4px 0;
+  }
+  .payment-modal .bill-info-box .info-row:not(:last-child) {
+      border-bottom: 1px dashed #ddd;
+  }
+  .payment-modal .bill-info-box .info-row span:first-child { color: #718096; }
+  .payment-modal .bill-info-box .info-row span:last-child { font-weight: 600; }
+  
+  /* --- ★★★ NEW & FINAL STYLE FOR DISCOUNT TEXT ★★★ --- */
+  .payment-modal .discount-text {
+      font-size: 11px;   /* Smaller font size */
+      font-weight: 500;  /* Less bold */
+      color: #DD6B20;    /* Orange color */
+      margin-left: 5px;  /* Space from the main amount */
+  }
+  
+  /* --- Form Elements --- */
+  .payment-modal .form-group { margin-bottom: 15px; }
+  .payment-modal .form-group:last-child { margin-bottom: 0; }
+  .payment-modal .form-group > label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--primary-color, #4A5568);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+  }
+  
+  /* --- Inline Form Groups (The Key to the Layout) --- */
+  .payment-modal .form-group-inline {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background-color: var(--bg-light, #F7FAFC); /* The crucial background color */
+      border-radius: 8px;
+      padding: 8px;
+      flex-wrap: nowrap;
+  }
+  .payment-modal .form-group-inline label {
+      margin-bottom: 0;
+      font-size: 12px;
+      color: #718096;
+      flex-shrink: 0;
+      white-space: nowrap;
+  }
+  .payment-modal .form-group-inline input {
+      width: 100%;
+      flex-grow: 1;
+      padding: 8px;
+      font-size: 13px;
+      border: 1px solid var(--border-color, #E2E8F0);
+      border-radius: 6px;
+      box-sizing: border-box;
+  }
+  .payment-modal .form-group-inline .btn {
+      padding: 8px 14px;
+      font-size: 12px;
+      background-color: var(--unpaid-color, #DD6B20);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+  }
+  
+  /* --- Payment History Section --- */
+  .payment-modal .history-section {
+      border: 1px solid var(--border-color, #E2E8F0);
+      border-radius: 8px;
+      padding: 10px;
+      background-color: var(--bg-light, #F7FAFC);
+      max-height: 150px;
+      overflow-y: auto;
+  }
+  
+  /* --- Sticky Footer with Buttons --- */
+  .payment-modal .window-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 15px 20px;
+      border-top: 1px solid var(--border-color, #E2E8F0);
+      background-color: white;
+      flex-shrink: 0;
+  }
+  .payment-modal .action-btn-modal {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+  }
+  .payment-modal .btn-submit-modal {
+      background-color: var(--secondary-color, #5A67D8);
+      color: white;
+  }
+  .payment-modal .payment-btn-cancel {
+      background-color: #E2E8F0;
+      color: var(--primary-color, #4A5568);
+  }
+
   </style>
 </head>
 
@@ -2105,7 +1897,7 @@
   <div id="overlay"></div>
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <img id="sidebar-company-logo" src="" alt="Company Logo" style="height: 28px; margin-right: 8px; display: none;">
+      <img id="sidebar-company-logo" src="logo.png" alt="Company Logo" style="height: 28px; margin-right: 8px; display: none;">
       <h2 class="sidebar-title" id="sidebar-company-name">মেনু</h2>
     </div>
     <ul class="sidebar-menu">
@@ -2158,7 +1950,7 @@
     <header class="header">
       <div class="header-left">
         <button class="menu-toggle" id="menu-toggle">☰</button>
-        <h1 class="header-title"><img id="header-company-logo" src="/AbidNetwork/logo.png" alt="Company Logo"
+        <h1 class="header-title"><img id="header-company-logo" src="logo.png" alt="Company Logo"
             style="height: 28px; margin-right: 8px;"><span id="header-company-name">Abid Network</span></h1>
       </div>
       <h2 id="page-title">ড্যাশবোর্ড</h2>
@@ -2331,7 +2123,7 @@
               <div class="form-group"><label for="ispMonth">মাস</label><select id="ispMonth"></select></div>
               <div class="form-group"><label for="ispYear">বছর</label><select id="ispYear"></select></div>
               <div class="form-group"><label for="ispAmount">টাকার পরিমাণ</label><input type="number" id="ispAmount"
-                  value="900" required></div>
+                  value="৯০০" required></div>
               <div class="form-group"><label for="ispPayDate">পরিশোধের তারিখ</label><input type="date" id="ispPayDate"
                   required></div>
             </div>
@@ -3108,12 +2900,12 @@
     </div>
   </div>
   <!-- Customer Profile Modal (UPDATED for v4.1) -->
-  <div class="modal" id="customerProfileModal">
-    <div class="modal-content profile-window">
-      <div class="profile-header">
-        <h2 id="profile-customer-name"></h2>
-        <div id="profile-action-buttons" style="margin-top: 10px;"></div>
-      </div>
+    <div class="modal" id="customerProfileModal">
+      <div class="modal-content profile-window">
+        <div class="profile-header">
+          <h2 id="profile-customer-name"></h2>
+          <div id="profile-action-buttons" style="margin-top: 10px;"></div>
+        </div>
 
       <div class="profile-info-grid">
         <div class="profile-info-item"><strong><span class="icon">📞</span> ফোন নম্বর</strong><span
@@ -3849,76 +3641,76 @@
 
         // ★★★ নতুন এবং নিরাপদ কোড (সতর্কবার্তা সহ) ★★★
 // এই সম্পূর্ণ ব্লকটি কপি করে পুরনোটির জায়গায় পেস্ট করুন
-routerListContainer.onclick = (e) => {
-    // রাউটার মুছে ফেলার বাটন
-    if (e.target.classList.contains('router-delete-btn')) {
-        const routerId = e.target.dataset.routerId;
-        const router = db.routers.find(r => r.id == routerId);
-        if (!router) return;
-
-        if (confirm(`আপনি কি নিশ্চিতভাবে "${router.name}" রাউটারটি মুছে ফেলতে চান?`)) {
-            const routerName = router.name;
-            db.routers = db.routers.filter(r => r.id != routerId);
-            addActivity('router_deleted', `রাউটার মুছে ফেলা হয়েছে: ${routerName}`, {
-                routerName: routerName,
-                routerId: routerId
-            });
-            saveAndRenderRouters();
-            alert(`রাউটার "${routerName}" সফলভাবে মুছে ফেলা হয়েছে।`);
+    routerListContainer.onclick = (e) => {
+        // রাউটার মুছে ফেলার বাটন
+        if (e.target.classList.contains('router-delete-btn')) {
+            const routerId = e.target.dataset.routerId;
+            const router = db.routers.find(r => r.id == routerId);
+            if (!router) return;
+    
+            if (confirm(`আপনি কি নিশ্চিতভাবে "${router.name}" রাউটারটি মুছে ফেলতে চান?`)) {
+                const routerName = router.name;
+                db.routers = db.routers.filter(r => r.id != routerId);
+                addActivity('router_deleted', `রাউটার মুছে ফেলা হয়েছে: ${routerName}`, {
+                    routerName: routerName,
+                    routerId: routerId
+                });
+                saveAndRenderRouters();
+                alert(`রাউটার "${routerName}" সফলভাবে মুছে ফেলা হয়েছে।`);
+            }
         }
-    }
-    // রাউটারের বিস্তারিত দেখার জন্য ক্লিক
-    else if (e.target.closest('.router-item-content')) {
-        const routerId = e.target.closest('.router-item-content').dataset.routerId;
-        const routerData = db.routers.find(r => r.id == routerId);
-        if (routerData) {
-            // নতুন প্রোফাইল উইন্ডোর জন্য ডেটা সেট করা
-            document.getElementById('router-profile-name').textContent = routerData.name;
-            document.getElementById('router-profile-model').textContent = routerData.model || 'N/A';
-            document.getElementById('router-profile-location').textContent = routerData.location || 'N/A';
-            document.getElementById('router-profile-ip').textContent = routerData.ip || 'N/A';
-            document.getElementById('router-profile-mac').textContent = routerData.macAddress || 'N/A';
-            document.getElementById('router-profile-distance').textContent = `${routerData.distanceMeters || 'N/A'} মিটার`;
-            document.getElementById('router-profile-power').textContent = routerData.powerSpec || 'N/A';
-            document.getElementById('router-profile-password').textContent = routerData.password || 'N/A';
-
-            const accessBtn = document.getElementById('router-profile-access-btn');
-            accessBtn.href = `http://${routerData.ip}`;
-
-            const editBtn = document.getElementById('router-profile-edit-btn');
-            editBtn.onclick = () => {
-                document.getElementById('routerProfileModal').classList.remove('active');
-                overlay.style.display = 'none';
-                // এডিট করার জন্য ফর্ম পূরণ করার পুরনো লজিক
-                document.getElementById('routerId').value = routerData.id;
-                document.getElementById('routerName').value = routerData.name;
-                document.getElementById('routerModel').value = routerData.model;
-                document.getElementById('routerIp').value = routerData.ip;
-                document.getElementById('routerDistanceFeet').value = routerData.distanceFeet || '';
-                document.getElementById('routerDistanceMeters').value = routerData.distanceMeters || '';
-                document.getElementById('routerPowerSpec').value = routerData.powerSpec || '';
-                document.getElementById('routerPassword').value = routerData.password || '';
-                document.getElementById('routerLocationSelect').value = routerData.location;
-                setMacAddress('routerMacContainer', routerData.macAddress || '');
-                formContainer.classList.add('active');
-                toggleFormBtn.textContent = 'ফর্ম লুকান';
-                formContainer.scrollIntoView({ behavior: 'smooth' });
-            };
-
-            // নতুন মডালটি দেখানো
-            document.getElementById('routerProfileModal').classList.add('active');
-            overlay.style.display = 'block';
+        // রাউটারের বিস্তারিত দেখার জন্য ক্লিক
+        else if (e.target.closest('.router-item-content')) {
+            const routerId = e.target.closest('.router-item-content').dataset.routerId;
+            const routerData = db.routers.find(r => r.id == routerId);
+            if (routerData) {
+                // নতুন প্রোফাইল উইন্ডোর জন্য ডেটা সেট করা
+                document.getElementById('router-profile-name').textContent = routerData.name;
+                document.getElementById('router-profile-model').textContent = routerData.model || 'N/A';
+                document.getElementById('router-profile-location').textContent = routerData.location || 'N/A';
+                document.getElementById('router-profile-ip').textContent = routerData.ip || 'N/A';
+                document.getElementById('router-profile-mac').textContent = routerData.macAddress || 'N/A';
+                document.getElementById('router-profile-distance').textContent = `${routerData.distanceMeters || 'N/A'} মিটার`;
+                document.getElementById('router-profile-power').textContent = routerData.powerSpec || 'N/A';
+                document.getElementById('router-profile-password').textContent = routerData.password || 'N/A';
+    
+                const accessBtn = document.getElementById('router-profile-access-btn');
+                accessBtn.href = `http://${routerData.ip}`;
+    
+                const editBtn = document.getElementById('router-profile-edit-btn');
+                editBtn.onclick = () => {
+                    document.getElementById('routerProfileModal').classList.remove('active');
+                    overlay.style.display = 'none';
+                    // এডিট করার জন্য ফর্ম পূরণ করার পুরনো লজিক
+                    document.getElementById('routerId').value = routerData.id;
+                    document.getElementById('routerName').value = routerData.name;
+                    document.getElementById('routerModel').value = routerData.model;
+                    document.getElementById('routerIp').value = routerData.ip;
+                    document.getElementById('routerDistanceFeet').value = routerData.distanceFeet || '';
+                    document.getElementById('routerDistanceMeters').value = routerData.distanceMeters || '';
+                    document.getElementById('routerPowerSpec').value = routerData.powerSpec || '';
+                    document.getElementById('routerPassword').value = routerData.password || '';
+                    document.getElementById('routerLocationSelect').value = routerData.location;
+                    setMacAddress('routerMacContainer', routerData.macAddress || '');
+                    formContainer.classList.add('active');
+                    toggleFormBtn.textContent = 'ফর্ম লুকান';
+                    formContainer.scrollIntoView({ behavior: 'smooth' });
+                };
+    
+                // নতুন মডালটি দেখানো
+                document.getElementById('routerProfileModal').classList.add('active');
+                overlay.style.display = 'block';
+            }
         }
-    }
-};
+    };
 // নতুন রাউটার প্রোফাইল মডাল বন্ধ করার জন্য ইভেন্ট লিসেনার
-const routerProfileModal = document.getElementById('routerProfileModal');
-const routerProfileCloseBtn = document.getElementById('router-profile-close-btn');
-
-routerProfileCloseBtn.onclick = () => {
-    routerProfileModal.classList.remove('active');
-    overlay.style.display = 'none';
-};
+        const routerProfileModal = document.getElementById('routerProfileModal');
+        const routerProfileCloseBtn = document.getElementById('router-profile-close-btn');
+        
+        routerProfileCloseBtn.onclick = () => {
+            routerProfileModal.classList.remove('active');
+            overlay.style.display = 'none';
+        };
 
         renderRouters();
       }
@@ -4282,9 +4074,9 @@ routerProfileCloseBtn.onclick = () => {
           houseCustomers.forEach(customer => {
             const row = document.createElement('tr');
 
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
             // ★★★ মূল সমাধান: গ্রাহকের স্ট্যাটাস অনুযায়ী একশন বাটন পরিবর্তন ★★★
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
             let actionButtons;
             if (customer.isActive === false) {
               // যদি গ্রাহক নিষ্ক্রিয় হয়
@@ -4459,9 +4251,9 @@ routerProfileCloseBtn.onclick = () => {
             let dueForDisplay = 0; // ডিফল্ট মান ০ করা হলো
             let statusText, statusClass;
 
-            // ******************************************************
+
             // নতুন এবং সবচেয়ে গুরুত্বপূর্ণ লজিকটি এখানে
-            // ******************************************************
+
             if (bill.status === 'paid') {
               statusText = 'Paid';
               statusClass = 'status-paid';
@@ -4900,9 +4692,6 @@ routerProfileCloseBtn.onclick = () => {
       };
 
       // --- START: Payment Modal Functions ---
-
-      // এই ভেরিয়েবলটি ট্র্যাক করবে কোন বিলের জন্য পেমেন্ট মোডাল খোলা হয়েছে
-
       /**
        * পেমেন্ট মোডালটি খোলে এবং প্রয়োজনীয় তথ্য দিয়ে এটি পূরণ করে।
        * @param {string} billId - যে বিলের জন্য পেমেন্ট করা হবে তার আইডি।
@@ -4932,8 +4721,7 @@ routerProfileCloseBtn.onclick = () => {
         document.getElementById('payment-customer-name').textContent = customer.name;
         document.getElementById('payment-bill-month').textContent =
           `${months[bill.month]}, ${toBengaliNumber(bill.year)}`;
-        document.getElementById('payment-bill-amount').textContent =
-          `৳${toBengaliNumber(finalBill.toFixed(2))} (ছাড়: ৳${toBengaliNumber(discount.toFixed(2))})`;
+        document.getElementById('payment-bill-amount').innerHTML = `৳${toBengaliNumber(finalBill.toFixed(2))} <span class="discount-text">(ছাড়: ৳${toBengaliNumber(discount.toFixed(2))})</span>`;
         document.getElementById('payment-due-amount').textContent = `৳${toBengaliNumber(dueAmount.toFixed(2))}`;
         document.getElementById('payment-advance-amount').textContent =
           `৳${toBengaliNumber(advanceAmount.toFixed(2))}`;
@@ -5000,7 +4788,7 @@ routerProfileCloseBtn.onclick = () => {
 
         // CSS স্টাইল (চূড়ান্ত সংস্করণ)
         const styles = `
-        .payment-history-item-final-v3 { background: #F7FAFC; border: 1px solid #E2E8F0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; }
+        .payment-history-item-final-v3 { background: #FFFFFF; border: 1px solid #E2E8F0; border-left: 4px solid var(--secondary-color); border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; }
         .ph-source-final-v3 { font-size: 11px; font-weight: 600; color: var(--primary-color); margin-bottom: 3px; display: flex; align-items: center; gap: 5px; }
         .ph-amount-final-v3 { font-size: 18px; font-weight: 700; color: var(--paid-color); margin-bottom: 4px; }
         .ph-date-final-v3 { font-size: 10px; color: #718096; display: flex; align-items: center; gap: 5px; }
@@ -5070,10 +4858,6 @@ routerProfileCloseBtn.onclick = () => {
 
         historyContainer.innerHTML = historyHTML;
       }
-
-      /**
-       * পেমেন্ট মোডাল এবং ওভারলে বন্ধ করে।
-       */
 
       // --- END: Payment Modal Functions ---
 
@@ -5461,7 +5245,6 @@ routerProfileCloseBtn.onclick = () => {
               }, 500); // Delay to ensure styles are loaded
           };
       }
-
 
       function renderReportPage() {
         initializeReportFilters();
@@ -5855,9 +5638,8 @@ routerProfileCloseBtn.onclick = () => {
         link.click();
         URL.revokeObjectURL(url);
 
-        // ======================================================
         // ডেটা এক্সপোর্টের জন্য নতুন লগ
-        // ======================================================
+
         addActivity('data_backup', 'সিস্টেমের সকল ডেটা ব্যাকআপ নেওয়া হয়েছে', {
           fileName: fileName
         });
@@ -5905,9 +5687,8 @@ routerProfileCloseBtn.onclick = () => {
               saveDb();
               saveActivities(activitiesToLoad);
 
-              // ======================================================
               // ডেটা ইমপোর্টের জন্য নতুন লগ
-              // ======================================================
+
               addActivity('data_import', 'ব্যাকআপ ফাইল থেকে ডেটা পুনরুদ্ধার করা হয়েছে', {
                 fileName: file.name
               });
@@ -5936,9 +5717,8 @@ routerProfileCloseBtn.onclick = () => {
           localStorage.removeItem('abidNetworkDb_v40'); // পুরনো ভার্সনও মুছে ফেলা
           localStorage.removeItem(LAST_PAGE_KEY);
 
-          // ******************************************************
           // নতুন দুটি লাইন এখানে যোগ করা হয়েছে
-          // ******************************************************
+
           localStorage.removeItem(ACTIVITY_STORAGE_KEY); // সাম্প্রতিক কার্যক্রম মুছে ফেলবে
           localStorage.removeItem('lastExportDate'); // শেষ ব্যাকআপের তারিখ মুছে ফেলবে
 
@@ -6226,28 +6006,28 @@ routerProfileCloseBtn.onclick = () => {
       setFooterYear();
 
 // Load saved website customizations
-const savedName = localStorage.getItem('websiteName');
-const savedLogo = localStorage.getItem('websiteLogo');
+    const savedName = localStorage.getItem('websiteName');
+    const savedLogo = localStorage.getItem('websiteLogo');
 
-if (savedName) {
-    document.getElementById("header-company-name").textContent = savedName;
-    document.getElementById("sidebar-company-name").textContent = savedName;
-    document.title = savedName;
-}
-
-// শুধু তখনই লোগো পরিবর্তন করো, যখন localStorage-এ কোনো ডেটা থাকে
-if (savedLogo) {
-    const headerLogoImg = document.getElementById("header-company-logo");
-    headerLogoImg.src = savedLogo;
-    headerLogoImg.style.display = "inline-block"; // Make sure it's visible
-    const sidebarLogoImg = document.getElementById("sidebar-company-logo");
-    sidebarLogoImg.src = savedLogo;
-    sidebarLogoImg.style.display = "inline-block"; // Make sure it's visible
-}
+        if (savedName) {
+            document.getElementById("header-company-name").textContent = savedName;
+            document.getElementById("sidebar-company-name").textContent = savedName;
+            document.title = savedName;
+        }
+        
+        // শুধু তখনই লোগো পরিবর্তন করো, যখন localStorage-এ কোনো ডেটা থাকে
+        if (savedLogo) {
+            const headerLogoImg = document.getElementById("header-company-logo");
+            headerLogoImg.src = savedLogo;
+            headerLogoImg.style.display = "inline-block"; // Make sure it's visible
+            const sidebarLogoImg = document.getElementById("sidebar-company-logo");
+            sidebarLogoImg.src = savedLogo;
+            sidebarLogoImg.style.display = "inline-block"; // Make sure it's visible
+        }
 // else ব্লকটি মুছে ফেলা হয়েছে, তাই localStorage-এ লোগো না থাকলে কিছুই হবে না
 
-const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
-switchPage(lastPage, true);
+    const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
+    switchPage(lastPage, true);
       // --- এই ফাংশনটি খুঁজে বের করে প্রতিস্থাপন করুন ---
 
       function submitPayment() {
@@ -6623,19 +6403,19 @@ switchPage(lastPage, true);
 
       const macStyle = document.createElement('style');
       macStyle.textContent = `
-    .mac-input-container { display: flex; align-items: center; gap: 5px; }
-    .mac-input-box {
-        width: 15%; height: 32px; text-align: center;
-        font-family: 'Courier New', monospace; font-size: 14px;
-        font-weight: 600; text-transform: uppercase;
-        border: 1px solid #CBD5E0; border-radius: 5px; padding: 0;
-    }
-    .mac-input-box:focus {
-        border-color: var(--secondary-color); outline: none;
-        box-shadow: 0 0 5px rgba(90, 103, 216, 0.3);
-    }
-    .mac-separator { font-size: 16px; font-weight: bold; color: #A0AEC0; }
-`;
+        .mac-input-container { display: flex; align-items: center; gap: 5px; }
+        .mac-input-box {
+            width: 15%; height: 32px; text-align: center;
+            font-family: 'Courier New', monospace; font-size: 14px;
+            font-weight: 600; text-transform: uppercase;
+            border: 1px solid #CBD5E0; border-radius: 5px; padding: 0;
+        }
+        .mac-input-box:focus {
+            border-color: var(--secondary-color); outline: none;
+            box-shadow: 0 0 5px rgba(90, 103, 216, 0.3);
+        }
+        .mac-separator { font-size: 16px; font-weight: bold; color: #A0AEC0; }
+  `;
       document.head.appendChild(macStyle);
 
     });
@@ -6856,78 +6636,59 @@ switchPage(lastPage, true);
     }
 
   </script>
+<!-- FINAL & COMPLETE PAYMENT MODAL HTML (REPLACE YOURS WITH THIS) -->
 
-  <!-- Payment Modal -->
-  <div id="paymentModal" class="payment-modal">
-    <div class="payment-modal-content">
-      <div class="payment-modal-header">
-        <h2>পেমেন্ট জমা করুন</h2>
+<div id="paymentModal" class="payment-modal">
+    <div class="action-window">
         <button class="payment-modal-close">&times;</button>
-      </div>
-      <div class="payment-modal-body">
-        <div class="payment-info">
-          <h4>বিল তথ্য</h4>
-          <p><strong>গ্রাহক:</strong> <span id="payment-customer-name"></span></p>
-          <p><strong>মাস:</strong> <span id="payment-bill-month"></span></p>
-          <p><strong>বিলের পরিমাণ:</strong> <span id="payment-bill-amount"></span></p>
-          <p><strong>বকেয়া:</strong> <span id="payment-due-amount"></span></p>
-          <p><strong>এডভ্যান্স:</strong> <span id="payment-advance-amount"></span></p>
-        </div>
-        <div class="payment-amount-input">
-          <label for="payment-amount-input">প্রাপ্ত টাকার পরিমাণ (৳)</label>
-          <input type="number" id="payment-amount-input" placeholder="টাকার পরিমাণ লিখুন" min="0" step="0.01">
+        
+        <div class="window-header">
+            <h2>পেমেন্ট জমা করুন</h2>
         </div>
 
-        <!-- Payment History Section -->
-        <div class="payment-history-section">
-          <div class="payment-history-title">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path
-                d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
-            </svg>
-            পেমেন্ট ইতিহাস
-          </div>
-          <div class="payment-history-list" id="payment-history-list">
-            <div class="payment-history-empty">কোনো পেমেন্ট ইতিহাস পাওয়া যায়নি</div>
-          </div>
+        <div class="window-body">
+            <!-- Bill Info Box -->
+            <div class="bill-info-box">
+                <div class="info-row"><span>গ্রাহক:</span> <span id="payment-customer-name"></span></div>
+                <div class="info-row"><span>মাস:</span> <span id="payment-bill-month"></span></div>
+                <div class="info-row"><span>বিলের পরিমাণ:</span> <span id="payment-bill-amount"></span></div>
+                <div class="info-row"><span>বকেয়া:</span> <span id="payment-due-amount"></span></div>
+                <div class="info-row"><span>এডভান্স:</span> <span id="payment-advance-amount"></span></div>
+            </div>
+            
+            <!-- CORRECTED: Payment Amount Field -->
+            <div class="form-group">
+                <div class="form-group-inline">
+                    <label for="payment-amount-input">🪙 প্রাপ্ত টাকার পরিমাণ (৳):</label>
+                    <input type="number" id="payment-amount-input" placeholder="পরিমাণ">
+                </div>
+            </div>
+
+            <!-- Payment History Section -->
+            <div class="form-group">
+                <label>🕒 পেমেন্ট ইতিহাস</label>
+                <div class="history-section" id="payment-history-list">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+            
+            <!-- CORRECTED & ADDED: Discount Field -->
+            <div class="form-group">
+                <div class="form-group-inline">
+                    <label for="discount-amount-input">🏷️ বিশেষ ছাড় (৳):</label>
+                    <input type="number" id="discount-amount-input" placeholder="পরিমাণ">
+                    <button id="apply-discount-btn" class="btn">প্রয়োগ</button>
+                </div>
+            </div>
         </div>
-      </div>
-      <!-- নতুন এবং সহজ ডিসকাউন্ট সেকশন -->
-      <!-- চূড়ান্ত ন্যারো, বক্স-যুক্ত এবং সেন্টার-অ্যালাইনড ডিসকাউন্ট সেকশন -->
-      <div class="discount-section"
-        style="margin-bottom: 20px; padding: 8px 12px; border: 1px solid #E2E8F0; border-radius: 8px; background-color: #F7FAFC;">
-        <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
-          <!-- শুধু এই লাইনে পরিবর্তন -->
 
-          <!-- বাম পাশের লেবেল (আইকন সহ) -->
-          <label for="discount-amount-input"
-            style="font-size: 13px; font-weight: 500; color: #4A5568; margin: 0; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
-            <span style="font-size: 16px; line-height: 1;">🏷️</span>
-            <span>বিশেষ ছাড় (৳):</span>
-          </label>
-
-          <!-- ডান পাশের ইনপুট এবং বাটন -->
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <!-- ইনপুট ফিল্ড -->
-            <input type="number" id="discount-amount-input" placeholder="পরিমাণ"
-              style="width: 80px; padding: 6px 8px; border: 1px solid #CBD5E0; border-radius: 6px; font-size: 13px; text-align: center; box-sizing: border-box; outline: none;">
-
-            <!-- বাটন -->
-            <button id="apply-discount-btn" class="btn"
-              style="background-color: #DD6B20; padding: 6px 12px; font-size: 12px; white-space: nowrap; border-radius: 6px;">
-              প্রয়োগ
-            </button>
-          </div>
-
+        <div class="window-actions">
+            <button class="action-btn-modal payment-btn-cancel">বাতিল</button>
+            <button id="submit-payment-btn" class="action-btn-modal btn-submit-modal">জমা দিন</button>
         </div>
-      </div>
-
-      <div class="payment-buttons">
-        <button class="payment-btn payment-btn-cancel">বাতিল</button>
-        <button class="payment-btn payment-btn-submit" id="submit-payment-btn">জমা দিন</button>
-      </div>
     </div>
-  </div>
+</div>
+
 </body>
 
 </html>
