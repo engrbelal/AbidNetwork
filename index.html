@@ -138,7 +138,7 @@
 
     .header {
       background: linear-gradient(90deg, var(--header-gradient-start), var(--header-gradient-end));
-      padding: 8px 12px;
+      padding: 4px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -148,10 +148,8 @@
       z-index: 999;
     }
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .header-right-placeholder {
+    width: 40px;
     }
 
     .menu-toggle {
@@ -163,12 +161,21 @@
     }
 
     .header-title {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 600;
       color: white;
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .no-focus-outline,
+    .no-focus-outline:hover,
+    .no-focus-outline:focus,
+    .no-focus-outline:active {
+        outline: none !important;
+        -webkit-tap-highlight-color: transparent !important; /* মোবাইল ব্রাউজারের জন্য */
+        box-shadow: none !important;
     }
 
     .header-logo {
@@ -1889,6 +1896,15 @@
       background-color: #E2E8F0;
       color: var(--primary-color, #4A5568);
   }
+  .data-table .customer-name-link {
+      color: inherit;
+      text-decoration: none;
+  }
+  
+  .data-table .customer-name-link:hover {
+      text-decoration: underline;
+      color: var(--secondary-color);
+  }
 
   </style>
 </head>
@@ -1897,7 +1913,7 @@
   <div id="overlay"></div>
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <img id="sidebar-company-logo" src="logo.png" alt="Company Logo" style="height: 28px; margin-right: 8px; display: none;">
+      <img id="sidebar-company-logo" src="logo.png" alt="" style="height: 28px; margin-right: 8px; display: none;">
       <h2 class="sidebar-title" id="sidebar-company-name">মেনু</h2>
     </div>
     <ul class="sidebar-menu">
@@ -1948,12 +1964,18 @@
 
   <div class="main-content" id="main-content">
     <header class="header">
-      <div class="header-left">
         <button class="menu-toggle" id="menu-toggle">☰</button>
-        <h1 class="header-title"><img id="header-company-logo" src="logo.png" alt="Company Logo"
-            style="height: 28px; margin-right: 8px;"><span id="header-company-name">Abid Network</span></h1>
-      </div>
-      <h2 id="page-title">ড্যাশবোর্ড</h2>
+    
+        <div class="header-center">
+            <a href="#" id="home-link" class="no-focus-outline" style="text-decoration: none; color: inherit;">
+                <h1 class="header-title">
+                    <img id="header-company-logo" src="logo.png" alt="" style="height: 36px; margin-right: 8px;">
+                    <span id="header-company-name">Abid Network</span>
+                </h1>
+            </a>
+        </div>
+    
+        <div class="header-right-placeholder"></div>
     </header>
 
     <div class="page-container">
@@ -2070,8 +2092,8 @@
             <div class="form-grid">
               <div class="form-group"><label for="customerName">গ্রাহকের নাম</label><input type="text" id="customerName"
                   required></div>
-              <div class="form-group"><label for="customerPhone">ফোন নম্বর (ঐচ্ছিক)</label><input type="text"
-                  id="customerPhone"></div>
+              <div class="form-group"><label for="customerPhone">ফোন নম্বর (ঐচ্ছিক)</label><input type="tel"
+                  id="customerPhone"inputmode="tel"></div>
               <div class="form-group"><label for="customerHouse">বাড়ি</label><select id="customerHouse"
                   required></select></div>
               <div class="form-group"><label for="customerBill">মাসিক বিল</label><select id="customerBill"
@@ -2129,8 +2151,10 @@
           <div class="search-box">
             <input type="text" id="billing-search-input" placeholder="গ্রাহকের নাম দিয়ে খুঁজুন...">
           </div>
-          <div class="filter-buttons" id="customer-list-filters">
-          </div>
+           <div class="filter-buttons">
+                        <button class="btn filter-btn active" data-filter="all">সকল বিল</button>
+                        <button class="btn filter-btn" data-filter="unpaid">শুধু বকেয়া</button>
+                    </div>
         </div>
         <div id="billing-list-by-house"></div>
       </main>
@@ -2928,8 +2952,15 @@
         </div>
 
       <div class="profile-info-grid">
-        <div class="profile-info-item"><strong><span class="icon">📞</span> ফোন নম্বর</strong><span
-            id="profile-phone"></span></div>
+        <div class="profile-info-item">
+    <strong>
+        <a id="profile-icon-phone-link" href="#" style="text-decoration: none; color: inherit;">
+            <span class="icon">📞</span>
+        </a>
+        ফোন নম্বর
+    </strong>
+    <span id="profile-phone"></span>
+</div>
         <div class="profile-info-item"><strong><span class="icon">🏠</span> বাড়ি</strong><span
             id="profile-house"></span></div>
         <div class="profile-info-item"><strong><span class="icon">💰</span> মাসিক বিল</strong><span
@@ -2956,6 +2987,7 @@
   </div>
 
   <script>
+    let notificationInterval = null;
     function toBengaliNumber(engNumber) {
       if (engNumber === null || engNumber === undefined) return '';
       const engStr = String(engNumber);
@@ -3005,6 +3037,23 @@
       setupMacInput('customerMacContainer');
       setupMacInput('routerMacContainer');
       updateLastExportDate();
+      document.querySelectorAll('#billing .filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('#billing .filter-btn.active').classList.remove('active');
+                btn.classList.add('active');
+                renderBillingPage();
+            });
+        });
+
+      // হেডার শিরোনামে ক্লিক করে ড্যাশবোর্ডে ফিরে যাওয়া
+      const homeLink = document.getElementById('home-link');
+      if (homeLink) {
+          homeLink.addEventListener('click', function(event) {
+              event.preventDefault(); 
+              switchPage('dashboard'); 
+          });
+      }
+      
       let customerToEditId = null;
       const DATABASE_KEY = 'abidNetworkDb_v41'; // Version updated to 4.1
       const LAST_PAGE_KEY = 'abidNetworkLastPage';
@@ -3408,66 +3457,73 @@
       });
 
       function switchPage(pageId, isInitialLoad = false) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        const page = document.getElementById(pageId);
-        if (page) page.classList.add('active');
-
-        document.querySelectorAll('.menu-item').forEach(item => {
-          item.classList.remove('active');
-          if (item.dataset.page === pageId) {
-            item.classList.add('active');
-            let titleText = item.querySelector('span').textContent;
-            if (pageId === 'advance') titleText = 'রাউটার ম্যানেজমেন্ট';
-            pageTitle.textContent = titleText;
+          // ★★★ নতুন কোড: টাইমার বন্ধ করার জন্য ★★★
+          // যদি ব্যবহারকারী ড্যাশবোর্ড ছাড়া অন্য কোনো পেজে যায়, তাহলে নোটিফিকেশনের টাইমারটি বন্ধ করে দেওয়া হবে।
+          if (pageId !== 'dashboard' && notificationInterval) {
+              clearInterval(notificationInterval);
+              notificationInterval = null; // টাইমার আইডি রিসেট করা
           }
-        });
-
-        if (!isInitialLoad) localStorage.setItem(LAST_PAGE_KEY, pageId);
-
-        sidebar.classList.remove('active');
-        overlay.style.display = 'none';
-
-        if (pageId === 'add_customer') {
-          initializeCustomerForm();
-
-          if (customerToEditId) {
-            const customer = db.customers.find(c => c.id === customerToEditId);
-            if (customer) {
-              customerIdInput.value = customer.id;
-              customerNameInput.value = customer.name;
-              customerPhoneInput.value = customer.phone;
-              customerHouseInput.value = customer.house;
-
-              if (defaultBillAmounts.includes(customer.monthlyBill)) {
-                customerBillInput.value = customer.monthlyBill;
-              } else {
-                customerBillInput.value = 'other';
-                customBillAmountInput.value = customer.monthlyBill;
+          // ★★★ নতুন কোডের শেষ ★★★
+      
+          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+          const page = document.getElementById(pageId);
+          if (page) page.classList.add('active');
+      
+          document.querySelectorAll('.menu-item').forEach(item => {
+              item.classList.remove('active');
+              if (item.dataset.page === pageId) {
+                  item.classList.add('active');
+                  let titleText = item.querySelector('span').textContent;
+                  if (pageId === 'advance') titleText = 'রাউটার ম্যানেজমেন্ট';
               }
-
-              connectionDateInput.value = customer.connectionDate;
-              isFreeUserInput.checked = customer.isFree;
-
-              customerFormTitle.textContent = 'গ্রাহকের তথ্য আপডেট করুন';
-              customerSubmitBtn.textContent = 'আপডেট করুন';
-              customerCancelBtn.style.display = 'inline-block';
-
-              customerBillInput.dispatchEvent(new Event('change'));
-              isFreeUserInput.dispatchEvent(new Event('change'));
-              setMacAddress('customerMacContainer', customer.macAddress);
-            }
-            customerToEditId = null;
+          });
+      
+          if (!isInitialLoad) localStorage.setItem(LAST_PAGE_KEY, pageId);
+      
+          sidebar.classList.remove('active');
+          overlay.style.display = 'none';
+      
+          if (pageId === 'add_customer') {
+              initializeCustomerForm();
+      
+              if (customerToEditId) {
+                  const customer = db.customers.find(c => c.id === customerToEditId);
+                  if (customer) {
+                      customerIdInput.value = customer.id;
+                      customerNameInput.value = customer.name;
+                      customerPhoneInput.value = customer.phone;
+                      customerHouseInput.value = customer.house;
+      
+                      if (defaultBillAmounts.includes(customer.monthlyBill)) {
+                          customerBillInput.value = customer.monthlyBill;
+                      } else {
+                          customerBillInput.value = 'other';
+                          customBillAmountInput.value = customer.monthlyBill;
+                      }
+      
+                      connectionDateInput.value = customer.connectionDate;
+                      isFreeUserInput.checked = customer.isFree;
+      
+                      customerFormTitle.textContent = 'গ্রাহকের তথ্য আপডেট করুন';
+                      customerSubmitBtn.textContent = 'আপডেট করুন';
+                      customerCancelBtn.style.display = 'inline-block';
+      
+                      customerBillInput.dispatchEvent(new Event('change'));
+                      isFreeUserInput.dispatchEvent(new Event('change'));
+                      setMacAddress('customerMacContainer', customer.macAddress);
+                  }
+                  customerToEditId = null;
+              }
           }
-        }
-
-        if (pageId === 'dashboard') renderDashboard();
-        if (pageId === 'customers') renderCustomerListPage();
-        if (pageId === 'billing') renderBillingPage();
-        if (pageId === 'isp_bill') renderIspBillPage();
-        if (pageId === 'reports') renderReportPage();
-        if (pageId === 'advance') renderAdvancePage();
-        if (pageId === 'settings') renderSettingsPage();
-        if (pageId === 'about') renderAboutPage();
+      
+          if (pageId === 'dashboard') renderDashboard();
+          if (pageId === 'customers') renderCustomerListPage();
+          if (pageId === 'billing') renderBillingPage();
+          if (pageId === 'isp_bill') renderIspBillPage();
+          if (pageId === 'reports') renderReportPage();
+          if (pageId === 'advance') renderAdvancePage();
+          if (pageId === 'settings') renderSettingsPage();
+          if (pageId === 'about') renderAboutPage();
       }
 
       // About page functions
@@ -3774,57 +3830,187 @@
       }
       // ★★★ নতুন বিল রিমাইন্ডার ফাংশন (renderDashboard এর আগে যোগ করুন) ★★★
 
+// --- checkAndDisplayBillReminder ফাংশনের চূড়ান্ত সংস্করণ (নতুন ফিচার সহ) ---
+
       function checkAndDisplayBillReminder() {
-        const notificationCard = document.getElementById('bill-reminder-notification');
-        const contentWrapper = document.getElementById('bill-reminder-content-wrapper');
-        const viewDueBtn = document.getElementById('view-due-bills-btn');
+    if (notificationInterval) {
+        clearInterval(notificationInterval);
+        notificationInterval = null;
+    }
 
-        if (!notificationCard || !contentWrapper || !viewDueBtn) return;
+    const notificationCard = document.getElementById('bill-reminder-notification');
+    const contentWrapper = document.getElementById('bill-reminder-content-wrapper');
+    const viewDueBtn = document.getElementById('view-due-bills-btn');
 
-        const today = new Date();
-        const REMINDER_DELAY_DAYS = 10;
+    if (!notificationCard || !contentWrapper || !viewDueBtn) return;
 
-        const allDueBills = db.bills.filter(bill =>
-          bill.status === 'unpaid' || bill.status === 'partially_paid'
+    // ★★★ নতুন সংযোজন: হেলপার ফাংশন (আপনার সুবিধার্থে মূল ফাংশনের ভেতরেই রাখা হলো) ★★★
+    // এই ফাংশনটি একজন গ্রাহক 'নিয়মিত বিলম্বকারী' কি না, তা যাচাই করে।
+    const isChronicDefaulter = (customerId) => {
+        const LATE_DAYS_THRESHOLD = 15; // ১৫ দিনের বেশি দেরি হলে 'বিলম্ব' ধরা হবে
+        const LATE_COUNT_THRESHOLD = 3;  // ৩ বার বা তার বেশি বিলম্ব করলে 'নিয়মিত' ধরা হবে
+        const HISTORY_MONTHS = 6;        // গত ৬ মাসের ইতিহাস দেখা হবে
+
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - HISTORY_MONTHS);
+
+        const recentBills = db.bills.filter(bill =>
+            bill.customerId === customerId &&
+            new Date(bill.year, bill.month) >= sixMonthsAgo &&
+            bill.status !== 'paid' // শুধুমাত্র অপরিশোধিত বা আংশিক পরিশোধিত বিল গণনা করা যেতে পারে, অথবা সব বিলই। এখানে সব বিলই ধরা হলো।
         );
 
-        const overdueBills = allDueBills.filter(bill => {
-          if (!bill.createdAt) {
-            // পুরনো বিল, যেগুলোতে createdAt তারিখ নেই, সেগুলোর জন্য পুরনো নিয়ম প্রযোজ্য হবে
-            return today.getDate() >= REMINDER_DELAY_DAYS;
-          }
+        const latePayments = recentBills.filter(bill => {
+            if (!bill.createdAt) return false;
+            
+            const paymentDate = (bill.paymentHistory && bill.paymentHistory.length > 0) 
+                ? new Date(bill.paymentHistory.find(p => p.source === 'manual')?.date || bill.createdAt)
+                : new Date(); // যদি পরিশোধ না হয়, আজকের দিনকেই ধরা হবে
 
-          const billCreationDate = new Date(bill.createdAt);
-          const diffTime = Math.abs(today - billCreationDate);
-          const billAgeInDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            const creationDate = new Date(bill.createdAt);
+            const diffTime = paymentDate - creationDate;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-          return billAgeInDays >= REMINDER_DELAY_DAYS;
+            return diffDays > LATE_DAYS_THRESHOLD;
         });
 
-        if (overdueBills.length > 0) {
-          const totalOverdueAmount = overdueBills.reduce((sum, bill) => sum + bill.remainingDue, 0);
+        return latePayments.length >= LATE_COUNT_THRESHOLD;
+    };
 
-          contentWrapper.innerHTML = `
-            <h4 style="margin: 0 0 3px 0; color: #C53030; font-size: 13px; font-weight: 600;">বিল পরিশোধ রিমাইন্ডার</h4>
-            <p style="margin: 0; color: #7B341E; font-size: 11px; line-height: 1.3;">
-                <strong>${toBengaliNumber(overdueBills.length)} জন</strong> গ্রাহকের বিল নির্ধারিত সময়ের মধ্যে পরিশোধ করা হয়নি।
-                মোট বকেয়া: <strong>৳${toBengaliNumber(totalOverdueAmount.toFixed(2))}</strong>
-            </p>
-        `;
+    const today = new Date();
+    const REMINDER_DELAY_DAYS = 0;
 
-          viewDueBtn.onclick = () => {
-            switchPage('billing');
-            setTimeout(() => {
-              const unpaidFilterBtn = document.querySelector('#billing .filter-btn[data-filter="unpaid"]');
-              if (unpaidFilterBtn) unpaidFilterBtn.click();
-            }, 100);
-          };
+    const overdueBills = db.bills
+        .filter(bill => bill.status === 'unpaid' || bill.status === 'partially_paid')
+        .map(bill => {
+            const billCreationDate = bill.createdAt ? new Date(bill.createdAt) : new Date(bill.year, bill.month, 1);
+            const diffTime = Math.abs(today - billCreationDate);
+            const billAgeInDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return { ...bill, billAgeInDays };
+        })
+        .filter(bill => bill.billAgeInDays >= REMINDER_DELAY_DAYS);
 
-          notificationCard.style.display = 'block';
-        } else {
-          notificationCard.style.display = 'none';
+    if (overdueBills.length === 0) {
+        notificationCard.style.display = 'none';
+        return;
+    }
+
+    // আপনার পুরনো লজিক: নেটওয়ার্কের সার্বিক অবস্থা অনুযায়ী মূল রঙ নির্ধারণ (অপরিবর্তিত)
+    let maxDueDays = 0;
+    overdueBills.forEach(bill => {
+        if (bill.billAgeInDays > maxDueDays) maxDueDays = bill.billAgeInDays;
+    });
+
+    let mainTitle = 'বিল পরিশোধ রিমাইন্ডার';
+    let mainBgColor = 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)';
+    let mainBorderColor = '#FBBF24';
+    let mainTitleColor = '#B45309';
+    let mainTextColor = '#78350F';
+
+    if (maxDueDays > 40) {
+        mainTitle = 'সতর্কতাঃ মারাত্মক বকেয়া';
+        mainBgColor = 'linear-gradient(135deg, #FEF2F2 0%, #FECACA 100%)';
+        mainBorderColor = '#F87171';
+        mainTitleColor = '#B91C1C';
+        mainTextColor = '#991B1B';
+    } else if (maxDueDays > 20) {
+        mainTitle = 'মনোযোগ দিনঃ বিল বকেয়া';
+        mainBgColor = 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)';
+        mainBorderColor = '#FB923C';
+        mainTitleColor = '#C2410C';
+        mainTextColor = '#9A3412';
+    }
+    notificationCard.style.background = mainBgColor;
+    notificationCard.style.borderColor = mainBorderColor;
+
+    // আপনার পুরনো লজিক: ফিচার্ড গ্রাহকের গ্রুপ অনুযায়ী রঙ নির্ধারণ (অপরিবর্তিত)
+    const groupStyles = {
+        highest: { color: '#B91C1C' },
+        unpaid: { color: '#C2410C' },
+        partial: { color: '#B45309' }
+    };
+
+    const highestDueBill = overdueBills.reduce((max, bill) => (bill.remainingDue > max.remainingDue ? bill : max), overdueBills[0]);
+    const unpaidBills = overdueBills.filter(b => b.status === 'unpaid');
+    const partialBills = overdueBills.filter(b => b.status === 'partially_paid');
+
+    // আপনার পুরনো লজিক: ডায়নামিক গ্রাহকের তথ্য তৈরির ফাংশন (নতুন যুক্তি সহ আপডেট করা হয়েছে)
+    const generateFeaturedBillerInfo = () => {
+        const possibleGroups = [];
+        if (highestDueBill) possibleGroups.push({ bill: highestDueBill, text: 'সর্বোচ্চ বকেয়াঃ', style: groupStyles.highest });
+        if (unpaidBills.length > 0) possibleGroups.push({ bill: unpaidBills[Math.floor(Math.random() * unpaidBills.length)], text: 'বিল দেননিঃ', style: groupStyles.unpaid });
+        if (partialBills.length > 0) possibleGroups.push({ bill: partialBills[Math.floor(Math.random() * partialBills.length)], text: 'আংশিক বকেয়াঃ', style: groupStyles.partial });
+
+        if (possibleGroups.length === 0) return null;
+
+        const selectedGroup = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
+        const customer = db.customers.find(c => c.id === selectedGroup.bill.customerId);
+
+        if (customer) {
+            // ★★★ নতুন সংযোজন: গ্রাহক 'নিয়মিত বিলম্বকারী' কি না, তা যাচাই করা ★★★
+            const isDefaulter = isChronicDefaulter(customer.id);
+
+            let displayText = `${selectedGroup.text} ${customer.name} (বকেয়াঃ ৳${toBengaliNumber(selectedGroup.bill.remainingDue.toFixed(2))})`;
+            let displayColor = selectedGroup.style.color;
+
+            // যদি গ্রাহক 'নিয়মিত বিলম্বকারী' হন, তাহলে লেখা এবং রঙ পরিবর্তন করা হবে
+            if (isDefaulter) {
+                displayText = `পুনরাবৃত্তিঃ ${customer.name} এখনও বিল দেননি (বকেয়াঃ ৳${toBengaliNumber(selectedGroup.bill.remainingDue.toFixed(2))})`;
+                displayColor = '#D92D20'; // একটি নির্দিষ্ট জরুরি রঙ
+            }
+
+            return {
+                text: displayText,
+                color: displayColor
+            };
         }
-      }
+        return null;
+    };
+
+    // আপনার পুরনো লজিক: চূড়ান্ত HTML তৈরি (অপরিবর্তিত)
+    const totalOverdueAmount = overdueBills.reduce((sum, bill) => sum + bill.remainingDue, 0);
+    contentWrapper.innerHTML = `
+        <div id="main-notification-part">
+            <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: 600; color: ${mainTitleColor};">${mainTitle}</h4>
+            <p style="margin: 0; color: ${mainTextColor}; font-size: 12px; line-height: 1.4;">
+                <strong>${toBengaliNumber(overdueBills.length)} জন</strong> গ্রাহকের বিল পরিশোধে দেরি হয়েছে।
+                মোট বকেয়াঃ <strong>৳${toBengaliNumber(totalOverdueAmount.toFixed(2))}</strong>
+            </p>
+        </div>
+        <div id="featured-biller-container" style="min-height: 15px; margin-top: 8px;">
+            <span id="dynamic-biller-info" style="font-size: 11px; font-weight: 500; transition: opacity 0.5s ease;"></span>
+        </div>
+    `;
+    notificationCard.style.display = 'flex';
+
+    // আপনার পুরনো লজিক: ডায়নামিক অংশ নিয়ন্ত্রণের ফাংশন এবং টাইমার (অপরিবর্তিত)
+    const updateDynamicInfo = () => {
+        const infoElement = document.getElementById('dynamic-biller-info');
+        const data = generateFeaturedBillerInfo();
+
+        if (infoElement && data) {
+            infoElement.style.opacity = '0';
+            setTimeout(() => {
+                infoElement.textContent = data.text;
+                infoElement.style.color = data.color;
+                infoElement.style.opacity = '1';
+            }, 500);
+        }
+    };
+
+    updateDynamicInfo();
+    const UPDATE_INTERVAL = 10000;
+    notificationInterval = setInterval(updateDynamicInfo, UPDATE_INTERVAL);
+
+    // আপনার পুরনো লজিক: "তালিকা দেখুন" বাটনের কার্যকারিতা (অপরিবর্তিত)
+    viewDueBtn.onclick = () => {
+        switchPage('billing');
+        setTimeout(() => {
+            const unpaidFilterBtn = document.querySelector('#billing .filter-btn[data-filter="unpaid"]');
+            if (unpaidFilterBtn) unpaidFilterBtn.click();
+        }, 100);
+    };
+}
 
       function renderDashboard() {
         const currentMonth = new Date().getMonth();
@@ -3895,65 +4081,72 @@
       });
 
       customerForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const customerId = document.getElementById('customerId').value;
-        const customerName = document.getElementById('customerName').value.trim();
-        const isFree = document.getElementById('isFreeUser').checked;
-
-        // Check for duplicate name (only for new customers)
-        if (!customerId) {
-          const existingCustomer = db.customers.find(c => c.name.toLowerCase() === customerName.toLowerCase());
-          if (existingCustomer) {
-            alert('এই নামে ইতিমধ্যে একজন গ্রাহক রয়েছে। দয়া করে অন্য নাম ব্যবহার করুন।');
-            return;
+          e.preventDefault();
+      
+          const customerPhone = document.getElementById('customerPhone').value.trim();
+      
+          if (customerPhone) {
+              const bangladeshiPhoneRegex = /^(01[3-9])\d{8}$/;
+              if (!bangladeshiPhoneRegex.test(customerPhone)) {
+                  alert('ত্রুটি: অনুগ্রহ করে একটি সঠিক বাংলাদেশী মোবাইল নম্বর দিন।\nনম্বরটি অবশ্যই ০১৯, ০১৭, ০১৮, ০১৫, ০১৬, ০১৩, বা ০১৪ দিয়ে শুরু হতে হবে এবং মোট ১১ সংখ্যার হতে হবে।');
+                  return;
+              }
           }
-        }
-
-        let monthlyBill = 0;
-        if (!isFree) {
-          const billSelect = document.getElementById('customerBill');
-          monthlyBill = billSelect.value === 'other' ?
-            parseFloat(document.getElementById('customBillAmount').value) :
-            parseFloat(billSelect.value);
-        }
-        const macAddress = getMacAddress('customerMacContainer');
-
-        const customerData = {
-          id: customerId || Date.now().toString(),
-          name: customerName,
-          phone: document.getElementById('customerPhone').value,
-          house: document.getElementById('customerHouse').value,
-          monthlyBill,
-          connectionDate: document.getElementById('connectionDate').value,
-          isFree,
-          macAddress,
-          advanceBalance: 0,
-          deactivationPending: false
-        };
-
-        if (customerId) {
-          const index = db.customers.findIndex(c => c.id === customerId);
-          customerData.advanceBalance = db.customers[index].advanceBalance;
-          db.customers[index] = customerData;
-          alert('গ্রাহকের তথ্য সফলভাবে আপডেট করা হয়েছে।');
-          showBackupReminder();
-        } else {
-          db.customers.push(customerData);
-          alert('নতুন গ্রাহক সফলভাবে যোগ করা হয়েছে।');
-
-          // Add activity log for new customer
-          addActivity('customer_added', `${customerName} নামে নতুন গ্রাহক যোগ করা হয়েছে`, {
-            customerName: customerName,
-            location: customerData.house,
-            amount: monthlyBill,
-            isFree: isFree
-          });
-
-          showBackupReminder();
-        }
-        saveDb();
-        resetCustomerForm();
-        switchPage('customers');
+      
+          const customerId = document.getElementById('customerId').value;
+          const customerName = document.getElementById('customerName').value.trim();
+          const isFree = document.getElementById('isFreeUser').checked;
+      
+          if (!customerId) {
+              const existingCustomer = db.customers.find(c => c.name.toLowerCase() === customerName.toLowerCase());
+              if (existingCustomer) {
+                  alert('এই নামে ইতিমধ্যে একজন গ্রাহক রয়েছে। দয়া করে অন্য নাম ব্যবহার করুন।');
+                  return;
+              }
+          }
+      
+          let monthlyBill = 0;
+          if (!isFree) {
+              const billSelect = document.getElementById('customerBill');
+              monthlyBill = billSelect.value === 'other' ?
+                  parseFloat(document.getElementById('customBillAmount').value) :
+                  parseFloat(billSelect.value);
+          }
+          const macAddress = getMacAddress('customerMacContainer');
+      
+          const customerData = {
+              id: customerId || Date.now().toString(),
+              name: customerName,
+              phone: customerPhone,
+              house: document.getElementById('customerHouse').value,
+              monthlyBill,
+              connectionDate: document.getElementById('connectionDate').value,
+              isFree,
+              macAddress,
+              advanceBalance: 0,
+              deactivationPending: false
+          };
+      
+          if (customerId) {
+              const index = db.customers.findIndex(c => c.id === customerId);
+              customerData.advanceBalance = db.customers[index].advanceBalance;
+              db.customers[index] = customerData;
+              alert('গ্রাহকের তথ্য সফলভাবে আপডেট করা হয়েছে।');
+              showBackupReminder();
+          } else {
+              db.customers.push(customerData);
+              alert('নতুন গ্রাহক সফলভাবে যোগ করা হয়েছে।');
+              addActivity('customer_added', `${customerName} নামে নতুন গ্রাহক যোগ করা হয়েছে`, {
+                  customerName: customerName,
+                  location: customerData.house,
+                  amount: monthlyBill,
+                  isFree: isFree
+              });
+              showBackupReminder();
+          }
+          saveDb();
+          resetCustomerForm();
+          switchPage('customers');
       });
 
       customerCancelBtn.addEventListener('click', () => {
@@ -4039,96 +4232,86 @@
       }
 
       function renderCustomerListPage(searchTerm = '', filter = 'all') {
-        const container = document.getElementById('customer-list-by-house');
-        container.innerHTML = '';
-
-        // ধাপ ১: সকল গ্রাহকের উপর সার্চ চালানো (ফিল্টার বাটনগুলো এখন আর কাজ করবে না)
-        let customersToDisplay = db.customers;
-        if (searchTerm) {
-          const lowerCaseSearchTerm = searchTerm.toLowerCase();
-          customersToDisplay = customersToDisplay.filter(c =>
-            c.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-            (c.phone && c.phone.includes(searchTerm))
-          );
-        }
-
-        // মোট গ্রাহকের সংখ্যা আপডেট করা (সকল গ্রাহক)
-        document.getElementById('total-customer-count').textContent = toBengaliNumber(customersToDisplay.length);
-
-        // যদি কোনো গ্রাহক খুঁজে না পাওয়া যায়
-        if (customersToDisplay.length === 0) {
-          container.innerHTML =
-            '<p style="text-align:center; color:#718096; margin-top: 20px;">কোনো গ্রাহক পাওয়া যায়নি।</p>';
-          return;
-        }
-
-        // সকল গ্রাহককে (সক্রিয় এবং নিষ্ক্রিয়) বাড়ি অনুযায়ী গ্রুপ করা
-        const houseGroups = {};
-        customersToDisplay.forEach(customer => {
-          if (!houseGroups[customer.house]) {
-            houseGroups[customer.house] = [];
+          const container = document.getElementById('customer-list-by-house');
+          container.innerHTML = '';
+      
+          let customersToDisplay = db.customers;
+          if (searchTerm) {
+              const lowerCaseSearchTerm = searchTerm.toLowerCase();
+              customersToDisplay = customersToDisplay.filter(c =>
+                  c.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+                  (c.phone && c.phone.includes(searchTerm))
+              );
           }
-          houseGroups[customer.house].push(customer);
-        });
-
-        const sortedHouses = Object.keys(houseGroups).sort((a, b) => db.locations.indexOf(a) - db.locations.indexOf(
-          b));
-
-        // বাড়ি অনুযায়ী কার্ড তৈরি এবং প্রদর্শন
-        sortedHouses.forEach(house => {
-          let houseCustomers = houseGroups[house];
-          if (houseCustomers.length === 0) return;
-
-          houseCustomers = houseCustomers.map(customer => ({
-              ...customer,
-              statusInfo: getCustomerStatus(customer)
-            }))
-            .sort((a, b) => a.statusInfo.sortOrder - b.statusInfo.sortOrder);
-
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML =
-            `<h2>${house} (${toBengaliNumber(houseCustomers.length)} জন)</h2><div class="table-container"><table class="data-table"><thead><tr><th>নাম</th><th>মাসিক বিল</th><th>স্ট্যাটাস</th><th>একশন</th></tr></thead><tbody></tbody></table></div>`;
-          const tableBody = card.querySelector('tbody');
-
-          houseCustomers.forEach(customer => {
-            const row = document.createElement('tr');
-
-
-            // ★★★ মূল সমাধান: গ্রাহকের স্ট্যাটাস অনুযায়ী একশন বাটন পরিবর্তন ★★★
-
-            let actionButtons;
-            if (customer.isActive === false) {
-              // যদি গ্রাহক নিষ্ক্রিয় হয়
-              row.style.backgroundColor = '#FFF1F2';
-              row.style.color = '#881337';
-              actionButtons =
-                `<button class="btn action-btn" style="background-color: #28a745;" onclick="reactivateCustomer('${customer.id}')">সক্রিয় করুন</button>`;
-            } else {
-              // যদি গ্রাহক সক্রিয় হয়
-              actionButtons = `
-                    <button class="btn action-btn" style="background-color: #3182CE;" onclick="editCustomer('${customer.id}')">Edit</button>
-                    <button class="btn btn-delete action-btn" onclick="deleteCustomer('${customer.id}')">Del</button>
-                `;
-            }
-
-            row.innerHTML = `
-                <td><a href="#" class="customer-name-link" onclick="openCustomerProfile('${customer.id}')">${customer.name}</a></td>
-                <td>৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}</td>
-                <td class="${customer.statusInfo.class}">${customer.statusInfo.text}</td>
-                <td>${actionButtons}</td>
-            `;
-            tableBody.appendChild(row);
+      
+          document.getElementById('total-customer-count').textContent = toBengaliNumber(customersToDisplay.length);
+      
+          if (customersToDisplay.length === 0) {
+              container.innerHTML =
+                  '<p style="text-align:center; color:#718096; margin-top: 20px;">কোনো গ্রাহক পাওয়া যায়নি।</p>';
+              return;
+          }
+      
+          const houseGroups = {};
+          customersToDisplay.forEach(customer => {
+              if (!houseGroups[customer.house]) {
+                  houseGroups[customer.house] = [];
+              }
+              houseGroups[customer.house].push(customer);
           });
-          container.appendChild(card);
-        });
-        const lastScrollPosition = sessionStorage.getItem('lastScrollPosition');
-        if (lastScrollPosition) {
-            setTimeout(() => {
-                window.scrollTo(0, parseInt(lastScrollPosition, 10));
-                sessionStorage.removeItem('lastScrollPosition');
-            }, 100);
-        }
+      
+          const sortedHouses = Object.keys(houseGroups).sort((a, b) => db.locations.indexOf(a) - db.locations.indexOf(
+              b));
+      
+          sortedHouses.forEach(house => {
+              let houseCustomers = houseGroups[house];
+              if (houseCustomers.length === 0) return;
+      
+              houseCustomers = houseCustomers.map(customer => ({
+                      ...customer,
+                      statusInfo: getCustomerStatus(customer)
+                  }))
+                  .sort((a, b) => a.statusInfo.sortOrder - b.statusInfo.sortOrder);
+      
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.innerHTML =
+                  `<h2>${house} (${toBengaliNumber(houseCustomers.length)} জন)</h2><div class="table-container"><table class="data-table"><thead><tr><th>নাম</th><th>মাসিক বিল</th><th>স্ট্যাটাস</th><th>একশন</th></tr></thead><tbody></tbody></table></div>`;
+              const tableBody = card.querySelector('tbody');
+      
+              houseCustomers.forEach(customer => {
+                  const row = document.createElement('tr');
+      
+                  let actionButtons;
+                  if (customer.isActive === false) {
+                      row.style.backgroundColor = '#FFF1F2';
+                      row.style.color = '#881337';
+                      actionButtons =
+                          `<button class="btn action-btn" style="background-color: #28a745;" onclick="reactivateCustomer('${customer.id}')">সক্রিয় করুন</button>`;
+                  } else {
+                      actionButtons = `
+                          <button class="btn action-btn" style="background-color: #3182CE;" onclick="editCustomer('${customer.id}')">Edit</button>
+                          <button class="btn btn-delete action-btn" onclick="deleteCustomer('${customer.id}')">Del</button>
+                      `;
+                  }
+      
+                  row.innerHTML = `
+                      <td><a href="#" class="customer-name-link" onclick="openCustomerProfile(event, '${customer.id}')">${customer.name}</a></td>
+                      <td>৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}</td>
+                      <td class="${customer.statusInfo.class}">${customer.statusInfo.text}</td>
+                      <td>${actionButtons}</td>
+                  `;
+                  tableBody.appendChild(row);
+              });
+              container.appendChild(card);
+          });
+          const lastScrollPosition = sessionStorage.getItem('lastScrollPosition');
+          if (lastScrollPosition) {
+              setTimeout(() => {
+                  window.scrollTo(0, parseInt(lastScrollPosition, 10));
+                  sessionStorage.removeItem('lastScrollPosition');
+              }, 100);
+          }
       }
 
       document.getElementById('customer-search-input').addEventListener('input', (e) => renderCustomerListPage(e
@@ -4203,119 +4386,127 @@
       }
 
       function renderBillingPage() {
-        initializeBillingForm();
-        const year = document.getElementById('generateYear').value;
-        const month = document.getElementById('generateMonth').value;
-        const searchTerm = document.getElementById('billing-search-input').value;
-
-        renderBillingTable(year, month, searchTerm, 'all');
-
-        document.querySelectorAll('.payment-action-btn').forEach(button => {
-          button.addEventListener('click', (event) => {
-            const billId = event.target.getAttribute('data-bill-id');
-            openPaymentModal(billId);
+          initializeBillingForm();
+          const year = document.getElementById('generateYear').value;
+          const month = document.getElementById('generateMonth').value;
+          const searchTerm = document.getElementById('billing-search-input').value;
+          
+          // ★★★ মূল সমাধান: active বাটন থেকে সঠিক ফিল্টারের মান সংগ্রহ করা ★★★
+          const activeFilterBtn = document.querySelector('#billing .filter-btn.active');
+          const filterType = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
+      
+          // সঠিক ফিল্টার মান দিয়ে টেবিল রেন্ডার করা
+          renderBillingTable(year, month, searchTerm, filterType);
+      
+          document.querySelectorAll('.payment-action-btn').forEach(button => {
+              button.addEventListener('click', (event) => {
+                  const billId = event.target.getAttribute('data-bill-id');
+                  openPaymentModal(billId);
+              });
           });
-        });
       }
 
       // এই নতুন কোডটি আপনার পুরনো renderBillingTable ফাংশনের জায়গায় বসবে
 
       function renderBillingTable(year, month, searchTerm = '', filter = 'all') {
-        billingListContainer.innerHTML = '';
-        let monthBills = db.bills.filter(b => b.year == year && b.month == month);
-
-        if (searchTerm) {
-          monthBills = monthBills.filter(bill => {
-            const customer = db.customers.find(c => c.id === bill.customerId);
-            return customer && customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+          billingListContainer.innerHTML = '';
+          let monthBills = db.bills.filter(b => b.year == year && b.month == month);
+      
+          if (searchTerm) {
+              monthBills = monthBills.filter(bill => {
+                  const customer = db.customers.find(c => c.id === bill.customerId);
+                  return customer && customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+              });
+          }
+      
+          // ★ সমাধান ১: "শুধু বকেয়া" ফিল্টারের সঠিক লজিক ★
+          if (filter === 'unpaid') {
+              monthBills = monthBills.filter(b => b.status === 'unpaid' || b.status === 'partially_paid');
+          }
+      
+          const statusPriority = {
+              'unpaid': 1,
+              'partially_paid': 2,
+              'paid': 3
+          };
+          monthBills.sort((a, b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99));
+      
+          db.locations.forEach(house => {
+              const houseBills = monthBills.filter(bill => {
+                  const customer = db.customers.find(c => c.id === bill.customerId);
+                  return customer && customer.house === house;
+              });
+      
+              if (houseBills.length === 0) return;
+      
+              const unpaidCount = houseBills.filter(b => b.status !== 'paid').length;
+              const unpaidText = unpaidCount > 0 ?
+                  `<span class="unpaid-count">(${toBengaliNumber(unpaidCount)} জন বিল দেয়নি)</span>` : '';
+      
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.innerHTML =
+                  `<h2>${house} ${unpaidText}</h2><div class="table-container"><table class="data-table"><thead><tr><th>গ্রাহক</th><th>মাসিক বিল</th><th>বকেয়া</th><th>এডভ্যান্স</th><th>মোট বিল</th><th>স্ট্যাটাস</th><th>একশন</th></tr></thead><tbody></tbody></table></div>`;
+              const tableBody = card.querySelector('tbody');
+      
+              houseBills.forEach(bill => {
+                  const customer = db.customers.find(c => c.id === bill.customerId);
+                  if (!customer) return;
+      
+                  const isDefaulter = isChronicDefaulter(customer.id);
+                  const defaulterIcon = isDefaulter ? '<span title="এই গ্রাহক প্রায়ই দেরিতে বিল পরিশোধ করেন"> 🚩</span>' : '';
+      
+                  const dueFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'due').reduce((sum,
+                      a) => sum + a.amount, 0);
+                  const finalTotalAmount = bill.monthlyAmount + bill.dueAmount + dueFromAdjustments;
+      
+                  let dueForDisplay = 0;
+                  let statusText, statusClass;
+      
+                  // ★★★ সমাধান ২: আপনার পুরনো এবং সঠিক "বকেয়া" কলামের লজিক পুনরুদ্ধার করা হয়েছে ★★★
+                  if (bill.status === 'paid') {
+                      statusText = 'Paid';
+                      statusClass = 'status-paid';
+                      dueForDisplay = 0;
+                  } else if (bill.status === 'partially_paid') {
+                      statusText = 'Partially Paid';
+                      statusClass = 'status-partially-paid';
+                      dueForDisplay = bill.remainingDue;
+                  } else { // Unpaid
+                      statusText = 'Unpaid';
+                      statusClass = 'status-unpaid';
+                      // শুধুমাত্র পূর্বের মাস থেকে আসা বকেয়া এবং অ্যাডজাস্টমেন্টের বকেয়া দেখানো হচ্ছে
+                      dueForDisplay = bill.dueAmount + dueFromAdjustments; 
+                  }
+      
+                  const row = document.createElement('tr');
+                  // ★ সমাধান ৩: onclick ইভেন্টে 'event' পাস করার লজিক যুক্ত করা হয়েছে ★
+                  row.innerHTML = `
+                      <td><a href="#" class="customer-name-link" onclick="openCustomerProfile(event, '${customer.id}')">${customer.name}</a>${defaulterIcon}</td>
+                      <td>৳${toBengaliNumber(bill.monthlyAmount.toFixed(2))}</td>
+                      <td>৳${toBengaliNumber(dueForDisplay.toFixed(2))}</td>
+                      <td>৳${toBengaliNumber((customer.advanceBalance || 0).toFixed(2))}</td>
+                      <td><strong>৳${toBengaliNumber(finalTotalAmount.toFixed(2))}</strong></td>
+                      <td class="${statusClass}">${statusText}</td>
+                      <td>
+                          <button class="btn btn-submit action-btn payment-action-btn" data-bill-id="${bill.id}">পেমেন্ট</button>
+                          <button class="btn btn-submit action-btn" onclick="openAdjustmentModal('${bill.id}')">Adj</button>
+                          <button class="btn btn-delete action-btn" onclick="deleteBill('${bill.id}')">Del</button>
+                      </td>
+                  `;
+                  tableBody.appendChild(row);
+              });
+              billingListContainer.appendChild(card);
           });
-        }
-
-        if (filter === 'unpaid') {
-          monthBills = monthBills.filter(b => b.status !== 'paid');
-        }
-        // এই নতুন কোডটি মাঝখানে বসবে
-        const statusPriority = {
-          'unpaid': 1,
-          'partially_paid': 2,
-          'paid': 3
-        };
-        monthBills.sort((a, b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99));
-
-        db.locations.forEach(house => {
-          const houseBills = monthBills.filter(bill => {
-            const customer = db.customers.find(c => c.id === bill.customerId);
-            return customer && customer.house === house;
+      
+          document.querySelectorAll('.payment-action-btn').forEach(button => {
+              button.addEventListener('click', (event) => {
+                  const billId = event.target.getAttribute('data-bill-id');
+                  openPaymentModal(billId);
+              });
           });
-
-          if (houseBills.length === 0) return;
-
-          const unpaidCount = houseBills.filter(b => b.status !== 'paid').length;
-          const unpaidText = unpaidCount > 0 ?
-            `<span class="unpaid-count">(${toBengaliNumber(unpaidCount)} জন বিল দেয়নি)</span>` : '';
-
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML =
-            `<h2>${house} ${unpaidText}</h2><div class="table-container"><table class="data-table"><thead><tr><th>গ্রাহক</th><th>মাসিক বিল</th><th>বকেয়া</th><th>এডভ্যান্স</th><th>মোট বিল</th><th>স্ট্যাটাস</th><th>একশন</th></tr></thead><tbody></tbody></table></div>`;
-          const tableBody = card.querySelector('tbody');
-
-          houseBills.forEach(bill => {
-            const customer = db.customers.find(c => c.id === bill.customerId);
-            if (!customer) return;
-
-            const dueFromAdjustments = (bill.adjustments || []).filter(a => a.type === 'due').reduce((sum,
-              a) => sum + a.amount, 0);
-            const finalTotalAmount = bill.monthlyAmount + bill.dueAmount + dueFromAdjustments;
-
-            let dueForDisplay = 0; // ডিফল্ট মান ০ করা হলো
-            let statusText, statusClass;
-
-
-            // নতুন এবং সবচেয়ে গুরুত্বপূর্ণ লজিকটি এখানে
-
-            if (bill.status === 'paid') {
-              statusText = 'Paid';
-              statusClass = 'status-paid';
-              dueForDisplay = 0; // যদি স্ট্যাটাস "Paid" হয়, বকেয়া কলামে সবসময় ০ দেখাবে
-            } else if (bill.status === 'partially_paid') {
-              statusText = 'Partially Paid';
-              statusClass = 'status-partially-paid';
-              dueForDisplay = bill.remainingDue; // আংশিক পেমেন্টের পর বাকি টাকাটাই বকেয়া
-            } else { // Unpaid
-              statusText = 'Unpaid';
-              statusClass = 'status-unpaid';
-              dueForDisplay = bill.dueAmount +
-              dueFromAdjustments; // শুধুমাত্র পূর্বের বকেয়া এবং অ্যাডজাস্টমেন্টের বকেয়া দেখাবে
-            }
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><a href="#" class="customer-name-link" onclick="openCustomerProfile('${customer.id}')">${customer.name}</a></td>
-                <td>৳${toBengaliNumber(bill.monthlyAmount.toFixed(2))}</td>
-                <td>৳${toBengaliNumber(dueForDisplay.toFixed(2))}</td>
-                <td>৳${toBengaliNumber((customer.advanceBalance || 0).toFixed(2))}</td>
-                <td><strong>৳${toBengaliNumber(finalTotalAmount.toFixed(2))}</strong></td>
-                <td class="${statusClass}">${statusText}</td>
-                <td>
-                    <button class="btn btn-submit action-btn payment-action-btn" data-bill-id="${bill.id}">পেমেন্ট</button>
-                    <button class="btn btn-submit action-btn" onclick="openAdjustmentModal('${bill.id}')">Adj</button>
-                    <button class="btn btn-delete action-btn" onclick="deleteBill('${bill.id}')">Del</button>
-                </td>
-            `;
-            tableBody.appendChild(row);
-          });
-          billingListContainer.appendChild(card);
-        });
-
-        // পেমেন্ট বাটনের জন্য ইভেন্ট লিসেনার পুনরায় সেট করা
-        document.querySelectorAll('.payment-action-btn').forEach(button => {
-          button.addEventListener('click', (event) => {
-            const billId = event.target.getAttribute('data-bill-id');
-            openPaymentModal(billId);
-          });
-        });
       }
+
 
       // --- আপনার পুরনো সম্পূর্ণ createBillForCustomer ফাংশনটি মুছে, এই নতুন কোডটি পেস্ট করুন ---
 
@@ -5859,92 +6050,104 @@
         }
       }
 
-      window.openCustomerProfile = (customerId) => {
-        const customer = db.customers.find(c => c.id === customerId);
-        if (!customer) return;
-
-        document.getElementById("profile-customer-name").textContent = customer.name;
-        document.getElementById("profile-phone").textContent = customer.phone || 'N/A';
-        document.getElementById("profile-house").textContent = customer.house;
-        document.getElementById("profile-bill").textContent = customer.isFree ? 'প্রযোজ্য নয়' : `৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}`;
-        document.getElementById("profile-connection-date").textContent = toBengaliNumber(new Date(customer
-          .connectionDate).toLocaleDateString('bn-BD'));
-        document.getElementById("profile-mac").textContent = customer.macAddress || 'N/A';
-
-        const financialStatus = getCustomerFinancialStatus(customerId);
-        const statusContainer = document.getElementById('profile-status-container');
-        const statusIcon = document.getElementById('profile-status-icon');
-        const statusText = document.getElementById('profile-status-text');
-
-        if (financialStatus) {
-          statusIcon.textContent = financialStatus.icon;
-          statusText.textContent = financialStatus.text;
-          statusText.style.color = financialStatus.color;
-          statusContainer.style.display = 'flex';
-        } else {
-          statusContainer.style.display = 'none';
-        }
-
-        const billingHistoryContainer = document.getElementById('profile-billing-history');
-        billingHistoryContainer.innerHTML = '';
-        const customerBills = db.bills.filter(b => b.customerId === customerId)
-          .sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month));
-
-        if (customerBills.length === 0) {
-          billingHistoryContainer.innerHTML =
-            '<li style="text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">কোনো বিলের ইতিহাস পাওয়া যায়নি।</li>';
-        } else {
-          customerBills.forEach(bill => {
-            const li = document.createElement('li');
-            let statusClass, statusText, dueText = '';
-
-            const totalBillAmount = bill.monthlyAmount + (bill.dueAmount || 0) +
-              ((bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0));
-
-            if (bill.status === 'paid') {
-              statusClass = 'status-paid';
-              statusText = 'পরিশোধিত';
-            } else if (bill.status === 'partially_paid') {
-              statusClass = 'status-partially-paid';
-              statusText = 'আংশিক';
-              if (bill.remainingDue > 0) {
-                dueText =
-                `<span class="due">বকেয়া: ৳${toBengaliNumber(bill.remainingDue.toFixed(2))}</span>`;
-              }
-            } else {
-              statusClass = 'status-unpaid';
-              statusText = 'বকেয়া';
-            }
-
-            li.className = `billing-history-item ${statusClass}`;
-            li.innerHTML = `
-                <div class="item-info">
-                    <span class="month">${months[bill.month]}, ${toBengaliNumber(bill.year)}</span>
-                    <span class="details">মোট বিল: ৳${toBengaliNumber(totalBillAmount.toFixed(2))}</span>
-                </div>
-                <div class="item-status">
-                    <span class="status">${statusText}</span>
-                    ${dueText}
-                </div>
-            `;
-            billingHistoryContainer.appendChild(li);
-          });
-        }
-
-        const actionButtonContainer = document.getElementById('profile-action-buttons');
-        const isActive = customer.isActive === undefined ? true : customer.isActive;
-
-        if (isActive) {
-          actionButtonContainer.innerHTML =
-            `<button class="simple-status-btn btn-is-active" onclick="deactivateCustomer('${customer.id}')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>সক্রিয়</span></button>`;
-        } else {
-          actionButtonContainer.innerHTML =
-            `<button class="simple-status-btn btn-is-inactive" onclick="reactivateCustomer('${customer.id}')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg><span>নিষ্ক্রিয়</span></button>`;
-        }
-
-        const customerProfileModal = document.getElementById('customerProfileModal');
-        customerProfileModal.classList.add('active');
-        document.getElementById('overlay').style.display = 'block';
+      window.openCustomerProfile = (event, customerId) => {
+          event.preventDefault();
+      
+          const customer = db.customers.find(c => c.id === customerId);
+          if (!customer) return;
+      
+          document.getElementById("profile-customer-name").textContent = customer.name;
+          document.getElementById("profile-house").textContent = customer.house;
+          document.getElementById("profile-bill").textContent = customer.isFree ? 'প্রযোজ্য নয়' : `৳${toBengaliNumber(customer.monthlyBill.toFixed(2))}`;
+          document.getElementById("profile-connection-date").textContent = toBengaliNumber(new Date(customer.connectionDate).toLocaleDateString('bn-BD'));
+          document.getElementById("profile-mac").textContent = customer.macAddress || 'N/A';
+      
+          const phoneIconLink = document.getElementById('profile-icon-phone-link');
+          const phoneSpan = document.getElementById('profile-phone');
+      
+          if (customer.phone && customer.phone.trim() !== '') {
+              phoneSpan.textContent = toBengaliNumber(customer.phone);
+              phoneIconLink.href = `tel:${customer.phone}`;
+              phoneIconLink.style.cursor = 'pointer';
+          } else {
+              phoneSpan.textContent = 'N/A';
+              phoneIconLink.href = '#';
+              phoneIconLink.style.cursor = 'default';
+          }
+      
+          const financialStatus = getCustomerFinancialStatus(customerId);
+          const statusContainer = document.getElementById('profile-status-container');
+          const statusIcon = document.getElementById('profile-status-icon');
+          const statusText = document.getElementById('profile-status-text');
+      
+          if (financialStatus) {
+              statusIcon.textContent = financialStatus.icon;
+              statusText.textContent = financialStatus.text;
+              statusText.style.color = financialStatus.color;
+              statusContainer.style.display = 'flex';
+          } else {
+              statusContainer.style.display = 'none';
+          }
+      
+          const billingHistoryContainer = document.getElementById('profile-billing-history');
+          billingHistoryContainer.innerHTML = '';
+          const customerBills = db.bills.filter(b => b.customerId === customerId)
+              .sort((a, b) => new Date(b.year, b.month) - new Date(a.year, a.month));
+      
+          if (customerBills.length === 0) {
+              billingHistoryContainer.innerHTML =
+                  '<li style="text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">কোনো বিলের ইতিহাস পাওয়া যায়নি।</li>';
+          } else {
+              customerBills.forEach(bill => {
+                  const li = document.createElement('li');
+                  let statusClass, statusText, dueText = '';
+                  const totalBillAmount = bill.monthlyAmount + (bill.dueAmount || 0) +
+                      ((bill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0));
+      
+                  if (bill.status === 'paid') {
+                      statusClass = 'status-paid';
+                      statusText = 'পরিশোধিত';
+                  } else if (bill.status === 'partially_paid') {
+                      statusClass = 'status-partially-paid';
+                      statusText = 'আংশিক';
+                      if (bill.remainingDue > 0) {
+                          dueText =
+                              `<span class="due">বকেয়া: ৳${toBengaliNumber(bill.remainingDue.toFixed(2))}</span>`;
+                      }
+                  } else {
+                      statusClass = 'status-unpaid';
+                      statusText = 'বকেয়া';
+                  }
+      
+                  li.className = `billing-history-item ${statusClass}`;
+                  li.innerHTML = `
+                      <div class="item-info">
+                          <span class="month">${months[bill.month]}, ${toBengaliNumber(bill.year)}</span>
+                          <span class="details">মোট বিল: ৳${toBengaliNumber(totalBillAmount.toFixed(2))}</span>
+                      </div>
+                      <div class="item-status">
+                          <span class="status">${statusText}</span>
+                          ${dueText}
+                      </div>
+                  `;
+                  billingHistoryContainer.appendChild(li);
+              });
+          }
+      
+          const actionButtonContainer = document.getElementById('profile-action-buttons');
+          const isActive = customer.isActive === undefined ? true : customer.isActive;
+      
+          if (isActive) {
+              actionButtonContainer.innerHTML =
+                  `<button class="simple-status-btn btn-is-active" onclick="deactivateCustomer('${customer.id}')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>সক্রিয়</span></button>`;
+          } else {
+              actionButtonContainer.innerHTML =
+                  `<button class="simple-status-btn btn-is-inactive" onclick="reactivateCustomer('${customer.id}')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg><span>নিষ্ক্রিয়</span></button>`;
+          }
+      
+          const customerProfileModal = document.getElementById('customerProfileModal');
+          customerProfileModal.classList.add('active');
+          document.getElementById('overlay').style.display = 'block';
       };
 
       window.deactivateCustomer = function(customerId) {
