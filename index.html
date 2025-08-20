@@ -3833,184 +3833,164 @@
 // --- checkAndDisplayBillReminder ফাংশনের চূড়ান্ত সংস্করণ (নতুন ফিচার সহ) ---
 
       function checkAndDisplayBillReminder() {
-    if (notificationInterval) {
-        clearInterval(notificationInterval);
-        notificationInterval = null;
-    }
-
-    const notificationCard = document.getElementById('bill-reminder-notification');
-    const contentWrapper = document.getElementById('bill-reminder-content-wrapper');
-    const viewDueBtn = document.getElementById('view-due-bills-btn');
-
-    if (!notificationCard || !contentWrapper || !viewDueBtn) return;
-
-    // ★★★ নতুন সংযোজন: হেলপার ফাংশন (আপনার সুবিধার্থে মূল ফাংশনের ভেতরেই রাখা হলো) ★★★
-    // এই ফাংশনটি একজন গ্রাহক 'নিয়মিত বিলম্বকারী' কি না, তা যাচাই করে।
-    const isChronicDefaulter = (customerId) => {
-        const LATE_DAYS_THRESHOLD = 15; // ১৫ দিনের বেশি দেরি হলে 'বিলম্ব' ধরা হবে
-        const LATE_COUNT_THRESHOLD = 3;  // ৩ বার বা তার বেশি বিলম্ব করলে 'নিয়মিত' ধরা হবে
-        const HISTORY_MONTHS = 6;        // গত ৬ মাসের ইতিহাস দেখা হবে
-
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - HISTORY_MONTHS);
-
-        const recentBills = db.bills.filter(bill =>
-            bill.customerId === customerId &&
-            new Date(bill.year, bill.month) >= sixMonthsAgo &&
-            bill.status !== 'paid' // শুধুমাত্র অপরিশোধিত বা আংশিক পরিশোধিত বিল গণনা করা যেতে পারে, অথবা সব বিলই। এখানে সব বিলই ধরা হলো।
-        );
-
-        const latePayments = recentBills.filter(bill => {
-            if (!bill.createdAt) return false;
-            
-            const paymentDate = (bill.paymentHistory && bill.paymentHistory.length > 0) 
-                ? new Date(bill.paymentHistory.find(p => p.source === 'manual')?.date || bill.createdAt)
-                : new Date(); // যদি পরিশোধ না হয়, আজকের দিনকেই ধরা হবে
-
-            const creationDate = new Date(bill.createdAt);
-            const diffTime = paymentDate - creationDate;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            return diffDays > LATE_DAYS_THRESHOLD;
-        });
-
-        return latePayments.length >= LATE_COUNT_THRESHOLD;
-    };
-
-    const today = new Date();
-    const REMINDER_DELAY_DAYS = 0;
-
-    const overdueBills = db.bills
-        .filter(bill => bill.status === 'unpaid' || bill.status === 'partially_paid')
-        .map(bill => {
-            const billCreationDate = bill.createdAt ? new Date(bill.createdAt) : new Date(bill.year, bill.month, 1);
-            const diffTime = Math.abs(today - billCreationDate);
-            const billAgeInDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            return { ...bill, billAgeInDays };
-        })
-        .filter(bill => bill.billAgeInDays >= REMINDER_DELAY_DAYS);
-
-    if (overdueBills.length === 0) {
-        notificationCard.style.display = 'none';
-        return;
-    }
-
-    // আপনার পুরনো লজিক: নেটওয়ার্কের সার্বিক অবস্থা অনুযায়ী মূল রঙ নির্ধারণ (অপরিবর্তিত)
-    let maxDueDays = 0;
-    overdueBills.forEach(bill => {
-        if (bill.billAgeInDays > maxDueDays) maxDueDays = bill.billAgeInDays;
-    });
-
-    let mainTitle = 'বিল পরিশোধ রিমাইন্ডার';
-    let mainBgColor = 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)';
-    let mainBorderColor = '#FBBF24';
-    let mainTitleColor = '#B45309';
-    let mainTextColor = '#78350F';
-
-    if (maxDueDays > 40) {
-        mainTitle = 'সতর্কতাঃ মারাত্মক বকেয়া';
-        mainBgColor = 'linear-gradient(135deg, #FEF2F2 0%, #FECACA 100%)';
-        mainBorderColor = '#F87171';
-        mainTitleColor = '#B91C1C';
-        mainTextColor = '#991B1B';
-    } else if (maxDueDays > 20) {
-        mainTitle = 'মনোযোগ দিনঃ বিল বকেয়া';
-        mainBgColor = 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)';
-        mainBorderColor = '#FB923C';
-        mainTitleColor = '#C2410C';
-        mainTextColor = '#9A3412';
-    }
-    notificationCard.style.background = mainBgColor;
-    notificationCard.style.borderColor = mainBorderColor;
-
-    // আপনার পুরনো লজিক: ফিচার্ড গ্রাহকের গ্রুপ অনুযায়ী রঙ নির্ধারণ (অপরিবর্তিত)
-    const groupStyles = {
-        highest: { color: '#B91C1C' },
-        unpaid: { color: '#C2410C' },
-        partial: { color: '#B45309' }
-    };
-
-    const highestDueBill = overdueBills.reduce((max, bill) => (bill.remainingDue > max.remainingDue ? bill : max), overdueBills[0]);
-    const unpaidBills = overdueBills.filter(b => b.status === 'unpaid');
-    const partialBills = overdueBills.filter(b => b.status === 'partially_paid');
-
-    // আপনার পুরনো লজিক: ডায়নামিক গ্রাহকের তথ্য তৈরির ফাংশন (নতুন যুক্তি সহ আপডেট করা হয়েছে)
-    const generateFeaturedBillerInfo = () => {
-        const possibleGroups = [];
-        if (highestDueBill) possibleGroups.push({ bill: highestDueBill, text: 'সর্বোচ্চ বকেয়াঃ', style: groupStyles.highest });
-        if (unpaidBills.length > 0) possibleGroups.push({ bill: unpaidBills[Math.floor(Math.random() * unpaidBills.length)], text: 'বিল দেননিঃ', style: groupStyles.unpaid });
-        if (partialBills.length > 0) possibleGroups.push({ bill: partialBills[Math.floor(Math.random() * partialBills.length)], text: 'আংশিক বকেয়াঃ', style: groupStyles.partial });
-
-        if (possibleGroups.length === 0) return null;
-
-        const selectedGroup = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
-        const customer = db.customers.find(c => c.id === selectedGroup.bill.customerId);
-
-        if (customer) {
-            // ★★★ নতুন সংযোজন: গ্রাহক 'নিয়মিত বিলম্বকারী' কি না, তা যাচাই করা ★★★
-            const isDefaulter = isChronicDefaulter(customer.id);
-
-            let displayText = `${selectedGroup.text} ${customer.name} (বকেয়াঃ ৳${toBengaliNumber(selectedGroup.bill.remainingDue.toFixed(2))})`;
-            let displayColor = selectedGroup.style.color;
-
-            // যদি গ্রাহক 'নিয়মিত বিলম্বকারী' হন, তাহলে লেখা এবং রঙ পরিবর্তন করা হবে
-            if (isDefaulter) {
-                displayText = `পুনরাবৃত্তিঃ ${customer.name} এখনও বিল দেননি (বকেয়াঃ ৳${toBengaliNumber(selectedGroup.bill.remainingDue.toFixed(2))})`;
-                displayColor = '#D92D20'; // একটি নির্দিষ্ট জরুরি রঙ
-            }
-
-            return {
-                text: displayText,
-                color: displayColor
-            };
-        }
-        return null;
-    };
-
-    // আপনার পুরনো লজিক: চূড়ান্ত HTML তৈরি (অপরিবর্তিত)
-    const totalOverdueAmount = overdueBills.reduce((sum, bill) => sum + bill.remainingDue, 0);
-    contentWrapper.innerHTML = `
-        <div id="main-notification-part">
-            <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: 600; color: ${mainTitleColor};">${mainTitle}</h4>
-            <p style="margin: 0; color: ${mainTextColor}; font-size: 12px; line-height: 1.4;">
-                <strong>${toBengaliNumber(overdueBills.length)} জন</strong> গ্রাহকের বিল পরিশোধে দেরি হয়েছে।
-                মোট বকেয়াঃ <strong>৳${toBengaliNumber(totalOverdueAmount.toFixed(2))}</strong>
-            </p>
-        </div>
-        <div id="featured-biller-container" style="min-height: 15px; margin-top: 8px;">
-            <span id="dynamic-biller-info" style="font-size: 11px; font-weight: 500; transition: opacity 0.5s ease;"></span>
-        </div>
-    `;
-    notificationCard.style.display = 'flex';
-
-    // আপনার পুরনো লজিক: ডায়নামিক অংশ নিয়ন্ত্রণের ফাংশন এবং টাইমার (অপরিবর্তিত)
-    const updateDynamicInfo = () => {
-        const infoElement = document.getElementById('dynamic-biller-info');
-        const data = generateFeaturedBillerInfo();
-
-        if (infoElement && data) {
-            infoElement.style.opacity = '0';
-            setTimeout(() => {
-                infoElement.textContent = data.text;
-                infoElement.style.color = data.color;
-                infoElement.style.opacity = '1';
-            }, 500);
-        }
-    };
-
-    updateDynamicInfo();
-    const UPDATE_INTERVAL = 10000;
-    notificationInterval = setInterval(updateDynamicInfo, UPDATE_INTERVAL);
-
-    // আপনার পুরনো লজিক: "তালিকা দেখুন" বাটনের কার্যকারিতা (অপরিবর্তিত)
-    viewDueBtn.onclick = () => {
-        switchPage('billing');
-        setTimeout(() => {
-            const unpaidFilterBtn = document.querySelector('#billing .filter-btn[data-filter="unpaid"]');
-            if (unpaidFilterBtn) unpaidFilterBtn.click();
-        }, 100);
-    };
-}
+          if (notificationInterval) {
+              clearInterval(notificationInterval);
+              notificationInterval = null;
+          }
+      
+          const notificationCard = document.getElementById('bill-reminder-notification');
+          const contentWrapper = document.getElementById('bill-reminder-content-wrapper');
+          const viewDueBtn = document.getElementById('view-due-bills-btn');
+      
+          if (!notificationCard || !contentWrapper || !viewDueBtn) return;
+      
+          // --- হেলপার ফাংশন: 'নিয়মিত বিলম্বকারী' শনাক্ত করার জন্য ---
+          const isChronicDefaulter = (customerId) => {
+              const LATE_DAYS_THRESHOLD = 15;
+              const LATE_COUNT_THRESHOLD = 3;
+              const HISTORY_MONTHS = 6;
+      
+              const sixMonthsAgo = new Date();
+              sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - HISTORY_MONTHS);
+      
+              const recentBills = db.bills.filter(bill =>
+                  bill.customerId === customerId && new Date(bill.year, bill.month) >= sixMonthsAgo
+              );
+      
+              const latePayments = recentBills.filter(bill => {
+                  if (!bill.createdAt) return false;
+                  const paymentDate = (bill.paymentHistory && bill.paymentHistory.length > 0) ?
+                      new Date(bill.paymentHistory.find(p => p.source === 'manual')?.date || bill.createdAt) :
+                      new Date();
+                  const creationDate = new Date(bill.createdAt);
+                  const diffTime = paymentDate - creationDate;
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  return diffDays > LATE_DAYS_THRESHOLD;
+              });
+              return latePayments.length >= LATE_COUNT_THRESHOLD;
+          };
+      
+          const today = new Date();
+          const REMINDER_DELAY_DAYS = 10;
+      
+          const overdueBills = db.bills
+              .filter(bill => bill.status === 'unpaid' || bill.status === 'partially_paid')
+              .map(bill => ({ ...bill,
+                  billAgeInDays: Math.floor(Math.abs(today - (bill.createdAt ? new Date(bill.createdAt) : new Date(bill.year, bill.month, 1))) / (1000 * 60 * 60 * 24))
+              }))
+              .filter(bill => bill.billAgeInDays >= REMINDER_DELAY_DAYS);
+      
+          if (overdueBills.length === 0) {
+              notificationCard.style.display = 'none';
+              return;
+          }
+      
+          // --- আপনার পুরনো লজিক: নেটওয়ার্কের সার্বিক অবস্থা অনুযায়ী মূল রঙ নির্ধারণ (অপরিবর্তিত) ---
+          let maxDueDays = 0;
+          overdueBills.forEach(bill => {
+              if (bill.billAgeInDays > maxDueDays) maxDueDays = bill.billAgeInDays;
+          });
+      
+          let mainTitle = 'বিল পরিশোধ রিমাইন্ডার';
+          let mainBgColor = 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)';
+          let mainBorderColor = '#FBBF24';
+          let mainTitleColor = '#B45309';
+          let mainTextColor = '#78350F';
+      
+          if (maxDueDays > 40) {
+              mainTitle = 'সতর্কতাঃ মারাত্মক বকেয়া';
+              mainBgColor = 'linear-gradient(135deg, #FEF2F2 0%, #FECACA 100%)';
+              mainBorderColor = '#F87171';
+              mainTitleColor = '#B91C1C';
+              mainTextColor = '#991B1B';
+          } else if (maxDueDays > 20) {
+              mainTitle = 'মনোযোগ দিনঃ বিল বকেয়া';
+              mainBgColor = 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)';
+              mainBorderColor = '#FB923C';
+              mainTitleColor = '#C2410C';
+              mainTextColor = '#9A3412';
+          }
+          notificationCard.style.background = mainBgColor;
+          notificationCard.style.borderColor = mainBorderColor;
+      
+          // --- ডায়নামিক মেসেজ তৈরির জন্য চূড়ান্ত এবং উন্নত লজিক ---
+          const highestDueBill = overdueBills.reduce((max, bill) => (bill.remainingDue > max.remainingDue ? bill : max), overdueBills[0]);
+          const unpaidBills = overdueBills.filter(b => b.status === 'unpaid');
+          const partialBills = overdueBills.filter(b => b.status === 'partially_paid');
+          const chronicDefaulters = overdueBills.filter(b => isChronicDefaulter(b.customerId));
+      
+          let lastShownMessageId = null;
+      
+          const generateFeaturedBillerInfo = () => {
+              const possibleGroups = [];
+              // ★★★ নতুন সংযোজন: 'নিয়মিত বিলম্বকারী' গ্রুপটি এখানে যোগ করা হয়েছে ★★★
+              if (chronicDefaulters.length > 0) possibleGroups.push({ id: `chronic_${chronicDefaulters[0].customerId}`, bill: chronicDefaulters[Math.floor(Math.random() * chronicDefaulters.length)], text: 'নিয়মিত বিলম্বকারীঃ', color: '#D92D20' });
+              if (highestDueBill) possibleGroups.push({ id: `highest_${highestDueBill.customerId}`, bill: highestDueBill, text: 'সর্বোচ্চ বকেয়াঃ', color: '#B91C1C' });
+              if (unpaidBills.length > 0) possibleGroups.push({ id: `unpaid_${unpaidBills[0].customerId}`, bill: unpaidBills[Math.floor(Math.random() * unpaidBills.length)], text: 'বিল দেননিঃ', color: '#C2410C' });
+              if (partialBills.length > 0) possibleGroups.push({ id: `partial_${partialBills[0].customerId}`, bill: partialBills[Math.floor(Math.random() * partialBills.length)], text: 'আংশিক বকেয়াঃ', color: '#B45309' });
+      
+              if (possibleGroups.length === 0) return null;
+      
+              // ★★★ মেসেজ রিপিটেশন বন্ধ করার জন্য উন্নত লজিক ★★★
+              let filteredGroups = possibleGroups;
+              if (lastShownMessageId && possibleGroups.length > 1) {
+                  filteredGroups = possibleGroups.filter(g => g.id !== lastShownMessageId);
+              }
+      
+              const selectedGroup = filteredGroups[Math.floor(Math.random() * filteredGroups.length)];
+              lastShownMessageId = selectedGroup.id;
+      
+              const customer = db.customers.find(c => c.id === selectedGroup.bill.customerId);
+              if (customer) {
+                  return {
+                      text: `${selectedGroup.text} ${customer.name} (বকেয়াঃ ৳${toBengaliNumber(selectedGroup.bill.remainingDue.toFixed(2))})`,
+                      color: selectedGroup.color
+                  };
+              }
+              return null;
+          };
+      
+          // --- চূড়ান্ত HTML তৈরি এবং টাইমার সেটআপ (অপরিবর্তিত) ---
+          const totalOverdueAmount = overdueBills.reduce((sum, bill) => sum + bill.remainingDue, 0);
+          contentWrapper.innerHTML = `
+              <div id="main-notification-part">
+                  <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: 600; color: ${mainTitleColor};">${mainTitle}</h4>
+                  <p style="margin: 0; color: ${mainTextColor}; font-size: 12px; line-height: 1.4;">
+                      <strong>${toBengaliNumber(overdueBills.length)} জন</strong> গ্রাহকের বিল পরিশোধে দেরি হয়েছে।
+                      মোট বকেয়াঃ <strong>৳${toBengaliNumber(totalOverdueAmount.toFixed(2))}</strong>
+                  </p>
+              </div>
+              <div id="featured-biller-container" style="min-height: 15px; margin-top: 8px;">
+                  <span id="dynamic-biller-info" style="font-size: 11px; font-weight: 500; transition: opacity 0.5s ease;"></span>
+              </div>
+          `;
+          notificationCard.style.display = 'flex';
+      
+          const updateDynamicInfo = () => {
+              const infoElement = document.getElementById('dynamic-biller-info');
+              const data = generateFeaturedBillerInfo();
+              if (infoElement && data) {
+                  infoElement.style.opacity = '0';
+                  setTimeout(() => {
+                      infoElement.textContent = data.text;
+                      infoElement.style.color = data.color;
+                      infoElement.style.opacity = '1';
+                  }, 500);
+              }
+          };
+      
+          updateDynamicInfo();
+          const UPDATE_INTERVAL = 10000;
+          notificationInterval = setInterval(updateDynamicInfo, UPDATE_INTERVAL);
+      
+          viewDueBtn.onclick = () => {
+              switchPage('billing');
+              setTimeout(() => {
+                  const unpaidFilterBtn = document.querySelector('#billing .filter-btn[data-filter="unpaid"]');
+                  if (unpaidFilterBtn) unpaidFilterBtn.click();
+              }, 100);
+          };
+      }
 
       function renderDashboard() {
         const currentMonth = new Date().getMonth();
@@ -4409,6 +4389,34 @@
       // এই নতুন কোডটি আপনার পুরনো renderBillingTable ফাংশনের জায়গায় বসবে
 
       function renderBillingTable(year, month, searchTerm = '', filter = 'all') {
+          // ★★★ নতুন সংযোজন: হেলপার ফাংশন (শুধুমাত্র এই টেবিলের জন্য) ★★★
+          // এই ফাংশনটি এখন এখানেই ডিফাইন করা হয়েছে, তাই এটি আর এরর দেবে না।
+          const isChronicDefaulter = (customerId) => {
+              const LATE_DAYS_THRESHOLD = 15;
+              const LATE_COUNT_THRESHOLD = 3;
+              const HISTORY_MONTHS = 6;
+      
+              const sixMonthsAgo = new Date();
+              sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - HISTORY_MONTHS);
+      
+              const recentBills = db.bills.filter(bill =>
+                  bill.customerId === customerId &&
+                  new Date(bill.year, bill.month) >= sixMonthsAgo
+              );
+      
+              const latePayments = recentBills.filter(bill => {
+                  if (!bill.createdAt) return false;
+                  const paymentDate = (bill.paymentHistory && bill.paymentHistory.length > 0) ?
+                  new Date(bill.paymentHistory.find(p => p.source === 'manual')?.date || bill.createdAt) :
+                  new Date();
+                  const creationDate = new Date(bill.createdAt);
+                  const diffTime = paymentDate - creationDate;
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  return diffDays > LATE_DAYS_THRESHOLD;
+              });
+              return latePayments.length >= LATE_COUNT_THRESHOLD;
+          };
+      
           billingListContainer.innerHTML = '';
           let monthBills = db.bills.filter(b => b.year == year && b.month == month);
       
@@ -4419,7 +4427,6 @@
               });
           }
       
-          // ★ সমাধান ১: "শুধু বকেয়া" ফিল্টারের সঠিক লজিক ★
           if (filter === 'unpaid') {
               monthBills = monthBills.filter(b => b.status === 'unpaid' || b.status === 'partially_paid');
           }
@@ -4453,6 +4460,7 @@
                   const customer = db.customers.find(c => c.id === bill.customerId);
                   if (!customer) return;
       
+                  // ★★★ মূল পরিবর্তন: এই লাইনটি এখন তার নিজস্ব ফাংশন খুঁজে পাবে ★★★
                   const isDefaulter = isChronicDefaulter(customer.id);
                   const defaulterIcon = isDefaulter ? '<span title="এই গ্রাহক প্রায়ই দেরিতে বিল পরিশোধ করেন"> 🚩</span>' : '';
       
@@ -4463,7 +4471,6 @@
                   let dueForDisplay = 0;
                   let statusText, statusClass;
       
-                  // ★★★ সমাধান ২: আপনার পুরনো এবং সঠিক "বকেয়া" কলামের লজিক পুনরুদ্ধার করা হয়েছে ★★★
                   if (bill.status === 'paid') {
                       statusText = 'Paid';
                       statusClass = 'status-paid';
@@ -4472,15 +4479,13 @@
                       statusText = 'Partially Paid';
                       statusClass = 'status-partially-paid';
                       dueForDisplay = bill.remainingDue;
-                  } else { // Unpaid
+                  } else {
                       statusText = 'Unpaid';
                       statusClass = 'status-unpaid';
-                      // শুধুমাত্র পূর্বের মাস থেকে আসা বকেয়া এবং অ্যাডজাস্টমেন্টের বকেয়া দেখানো হচ্ছে
-                      dueForDisplay = bill.dueAmount + dueFromAdjustments; 
+                      dueForDisplay = bill.dueAmount + dueFromAdjustments;
                   }
       
                   const row = document.createElement('tr');
-                  // ★ সমাধান ৩: onclick ইভেন্টে 'event' পাস করার লজিক যুক্ত করা হয়েছে ★
                   row.innerHTML = `
                       <td><a href="#" class="customer-name-link" onclick="openCustomerProfile(event, '${customer.id}')">${customer.name}</a>${defaulterIcon}</td>
                       <td>৳${toBengaliNumber(bill.monthlyAmount.toFixed(2))}</td>
@@ -4506,7 +4511,6 @@
               });
           });
       }
-
 
       // --- আপনার পুরনো সম্পূর্ণ createBillForCustomer ফাংশনটি মুছে, এই নতুন কোডটি পেস্ট করুন ---
 
