@@ -46,7 +46,7 @@
     }
 
     .sidebar {
-      width: 220px;
+      width: fit-content;
       background-color: var(--menu-bg);
       color: var(--menu-text-color);
       position: fixed;
@@ -1905,7 +1905,80 @@
       text-decoration: underline;
       color: var(--secondary-color);
   }
-
+  /* Selective Backup Modal Styles (নতুন CSS কোড) */
+  .backup-options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 15px;
+      background-color: #fdfdff;
+      padding: 10px;
+      border: 1px solid #f0f0f0;
+      border-radius: 8px;
+  }
+  
+  .backup-option {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 0 12px;
+      padding: 10px 5px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+  }
+  
+  .backup-options-container > .backup-option:last-child {
+      border-bottom: none;
+  }
+  
+  .backup-option input[type="checkbox"],
+  .backup-option input[type="radio"] {
+      grid-row: 1 / 3;
+      grid-column: 1 / 2;
+      width: 17px;
+      height: 17px;
+      margin-top: 2px;
+      cursor: pointer;
+  }
+  
+  .backup-option .option-label {
+      grid-column: 2 / 3;
+      text-align: left;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 1.2;
+  }
+  
+  .backup-option .option-count {
+      grid-column: 2 / 3;
+      margin-top: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      color: #a0a0a0;
+  }
+  
+  .import-method-container .backup-option {
+      border-bottom: none;
+      padding: 4px 0;
+  }
+  
+  .import-method-container .backup-option .option-label {
+      font-size: 13px;
+  }
+  /* মডালের জন্য অতিরিক্ত স্টাইল */
+  .modal-content {
+      /* আপনার বর্তমান স্টাইল ঠিক থাকবে */
+      transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .modal.active .modal-content {
+      transform: scale(1);
+      opacity: 1;
+  }
+  .modal .modal-content {
+      transform: scale(0.9);
+      opacity: 0;
+  }
   </style>
 </head>
 
@@ -5834,93 +5907,363 @@
       const importInput = document.getElementById('import-file-input');
       const resetBtn = document.getElementById('reset-app-btn');
 
-      // পুরনো exportBtn.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+// --- পুরনো exportBtn.addEventListener(...) ব্লকটি মুছে এই চূড়ান্ত এবং উন্নত কোডটি বসান ---
 
       exportBtn.addEventListener('click', () => {
-        const fullBackupData = {
-          db: db,
-          activities: loadActivities()
+    const backupModal = document.getElementById('selectiveBackupModal');
+    const overlay = document.getElementById('overlay');
+    const optionsContainer = backupModal.querySelector('.backup-options-container');
+
+    const dataKeyToName = {
+        customers: 'গ্রাহক তালিকা ও প্রোফাইল',
+        bills: 'বিলের সম্পূর্ণ ইতিহাস',
+        routers: 'রাউটারের তথ্য',
+        ispPayments: 'আইএসপি বিলের রেকর্ড',
+        locations: 'বাড়ির তালিকা',
+        activities: 'সাম্প্রতিক কার্যক্রমের লগ'
+    };
+    
+    const unitNames = {
+        customers: 'টি গ্রাহকের প্রোফাইল',
+        bills: 'টি বিলের ইতিহাস',
+        routers: 'টি রাউটারের তথ্য',
+        ispPayments: 'টি আইএসপি বিলের রেকর্ড',
+        locations: 'টি বাড়ির তালিকা',
+        activities: 'টি কার্যক্রমের লগ'
+    };
+
+    const dataCounts = {
+        customers: db.customers.length,
+        bills: db.bills.length,
+        routers: db.routers.length,
+        ispPayments: db.ispPayments.length,
+        locations: db.locations.length,
+        activities: (localStorage.getItem(ACTIVITY_STORAGE_KEY) ? JSON.parse(localStorage.getItem(ACTIVITY_STORAGE_KEY)).length : 0)
+    };
+
+    document.querySelectorAll('.backup-option[data-option-for]').forEach(el => el.remove());
+
+    Object.keys(dataKeyToName).forEach(key => {
+        const count = dataCounts[key] || 0;
+        if (count > 0) {
+            const bengaliCount = toBengaliNumber(count);
+            const optionElement = document.createElement('label');
+            optionElement.className = 'backup-option';
+            optionElement.dataset.optionFor = key;
+            optionElement.innerHTML = `
+                <input type="checkbox" data-key="${key}" checked>
+                <span class="option-label">${dataKeyToName[key]}</span>
+                <span class="option-count">${bengaliCount} ${unitNames[key]} আছে</span>
+            `;
+            optionsContainer.appendChild(optionElement);
+        }
+    });
+
+    backupModal.classList.add('active');
+    overlay.style.display = 'block';
+
+    const createBackupBtn = document.getElementById('createBackupBtn');
+    const closeModalBtn = document.getElementById('backupModalCloseBtn');
+    const selectAllCheckbox = document.getElementById('backup-select-all');
+    const activeCheckboxes = document.querySelectorAll('.backup-option input[data-key]:not(:disabled)');
+
+    selectAllCheckbox.checked = true;
+    selectAllCheckbox.onchange = () => {
+        activeCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    };
+
+    activeCheckboxes.forEach(checkbox => {
+        checkbox.onchange = () => {
+            if (!checkbox.checked) {
+                selectAllCheckbox.checked = false;
+            }
         };
-        const dataStr = JSON.stringify(fullBackupData, null, 2);
-        const dataBlob = new Blob([dataStr], {
-          type: 'application/json'
-        });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        const fileName = `abid_network_full_backup_${new Date().toISOString().split('T')[0]}.json`;
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        URL.revokeObjectURL(url);
+    });
 
-        // ডেটা এক্সপোর্টের জন্য নতুন লগ
-
-        addActivity('data_backup', 'সিস্টেমের সকল ডেটা ব্যাকআপ নেওয়া হয়েছে', {
-          fileName: fileName
+    createBackupBtn.onclick = () => {
+        const selectedKeys = [];
+        document.querySelectorAll('.backup-option input[data-key]:checked').forEach(checkbox => {
+            selectedKeys.push(checkbox.dataset.key);
         });
-        // ======================================================
 
-        const now = new Date();
-        const bengaliDate = now.toLocaleDateString('bn-BD', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        });
-        localStorage.setItem('lastExportDate', bengaliDate);
-        updateLastExportDate();
-        hideBackupReminder();
-        renderDashboard(); // ড্যাশবোর্ড রিফ্রেশ করে নতুন লগ দেখানোর জন্য
-      });
+        if (selectedKeys.length === 0) {
+            alert('অনুগ্রহ করে কমপক্ষে একটি অপশন নির্বাচন করুন।');
+            return;
+        }
+        
+        backupModal.classList.remove('active');
+        
+        // ★★★ নতুন প্রগ্রেস বার লজিক শুরু ★★★
+        const progressModal = document.getElementById('exportProgressModal');
+        const progressBar = document.getElementById('export-progress-bar');
+        const progressStatusText = document.getElementById('export-progress-status');
+        
+        progressModal.classList.add('active');
+        overlay.style.display = 'block';
+
+        let progress = 0;
+        const totalSteps = selectedKeys.length + 1; // +১ ফাইল তৈরির জন্য
+        const stepIncrement = 100 / totalSteps;
+        const keyToNameMap = { customers: 'গ্রাহক', bills: 'বিল', routers: 'রাউটার', ispPayments: 'আইএসপি বিল', locations: 'বাড়ি', activities: 'কার্যক্রম' };
+
+        const processNextKey = (index = 0) => {
+            if (index >= selectedKeys.length) {
+                // সব ডেটা প্রস্তুত, এখন ফাইল তৈরি এবং ডাউনলোড
+                progressBar.style.width = '100%';
+                progressStatusText.textContent = 'ফাইল তৈরি করা হচ্ছে...';
+                
+                setTimeout(() => {
+                    const dataToBackup = {};
+                    selectedKeys.forEach(key => {
+                        if (key === 'activities') {
+                            dataToBackup[key] = loadActivities();
+                        } else {
+                            dataToBackup[key] = db[key];
+                        }
+                    });
+
+                    const dataStr = JSON.stringify(dataToBackup, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const fileName = `abid_network_selective_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    // আপনার পুরনো লগ এবং তারিখ আপডেটের লজিক
+                    const totalOptionsAvailable = document.querySelectorAll('.backup-option input[data-key]').length;
+                    if (selectedKeys.length === totalOptionsAvailable) {
+                        addActivity('data_backup', 'সিস্টেমের সকল ডেটা ব্যাকআপ নেওয়া হয়েছে।', { fileName });
+                    } else {
+                        selectedKeys.forEach(key => {
+                            const count = dataToBackup[key].length;
+                            const bengaliCount = toBengaliNumber(count);
+                            const logDescription = `${bengaliCount} ${unitNames[key]} ব্যাকআপ করা হয়েছে।`;
+                            addActivity('data_backup', logDescription, { fileName, exported: key });
+                        });
+                    }
+                    const now = new Date();
+                    const bengaliDate = now.toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' });
+                    localStorage.setItem('lastExportDate', bengaliDate);
+                    updateLastExportDate();
+                    hideBackupReminder();
+
+                    // প্রক্রিয়া সফলভাবে শেষ
+                    progressStatusText.textContent = '✓ ব্যাকআপ সফল হয়েছে!';
+                    setTimeout(() => {
+                        progressModal.classList.remove('active');
+                        overlay.style.display = 'none';
+                    }, 1500); // ১.৫ সেকেন্ড পর মডাল স্বয়ংক্রিয়ভাবে বন্ধ হবে
+
+                }, 500); // ফাইল তৈরির জন্য ৫০০ms বিলম্ব
+                return;
+            }
+
+            const key = selectedKeys[index];
+            progress += stepIncrement;
+            progressBar.style.width = `${progress}%`;
+            progressStatusText.textContent = `${keyToNameMap[key]} প্রস্তুত করা হচ্ছে...`;
+
+            setTimeout(() => processNextKey(index + 1), 300); // প্রতিটি ধাপের মধ্যে ৩০০ms বিলম্ব
+        };
+
+        progressStatusText.textContent = 'প্রক্রিয়া শুরু হচ্ছে...';
+        setTimeout(processNextKey, 400); // প্রাথমিক বিলম্ব
+        // ★★★ নতুন প্রগ্রেস বার লজিক শেষ ★★★
+    };
+
+    closeModalBtn.onclick = () => {
+        backupModal.classList.remove('active');
+        overlay.style.display = 'none';
+    };
+});
 
       importBtn.addEventListener('click', () => importInput.click());
-      // পুরনো importInput.addEventListener ব্লকটি মুছে এই নতুন কোডটি বসান
+
+// --- পুরনো importInput.addEventListener(...) ব্লকটি মুছে এই চূড়ান্ত এবং উন্নত কোডটি বসান ---
 
       importInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          try {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
             const importedData = JSON.parse(e.target.result);
-            let dbToLoad, activitiesToLoad = [];
-
-            if (importedData.db && importedData.activities) {
-              dbToLoad = importedData.db;
-              activitiesToLoad = importedData.activities;
-            } else if (importedData.customers && importedData.bills) {
-              dbToLoad = importedData;
-            } else {
-              alert('ফাইলটির ফরম্যাট বোঝা যাচ্ছে না। এটি একটি অবৈধ ফাইল।');
-              event.target.value = '';
-              return;
+            
+            const dataRoot = importedData.db ? importedData.db : importedData;
+            if (importedData.activities) {
+                dataRoot.activities = importedData.activities;
             }
 
-            if (confirm(
-                'আপনি কি নিশ্চিতভাবে এই ডেটা ইমপোর্ট করতে চান? বর্তমান সকল ডেটা মুছে নতুন ডেটা যোগ করা হবে।'
-                )) {
-              db = migrateDb(dbToLoad);
-              saveDb();
-              saveActivities(activitiesToLoad);
+            const dataKeyToName = {
+                customers: 'গ্রাহক তালিকা',
+                bills: 'বিলের ইতিহাস',
+                routers: 'রাউটারের তথ্য',
+                ispPayments: 'আইএসপি বিলের রেকর্ড',
+                locations: 'বাড়ির তালিকা',
+                activities: 'সাম্প্রতিক কার্যক্রমের লগ'
+            };
+            
+            const unitNames = {
+                customers: 'টি গ্রাহকের প্রোফাইল',
+                bills: 'টি বিলের ইতিহাস',
+                routers: 'টি রাউটারের তথ্য',
+                ispPayments: 'টি আইএসপি বিলের রেকর্ড',
+                locations: 'টি বাড়ির তালিকা',
+                activities: 'টি কার্যক্রমের লগ'
+            };
 
-              // ডেটা ইমপোর্টের জন্য নতুন লগ
+            const availableDataKeys = Object.keys(dataRoot).filter(key => 
+                dataKeyToName[key] && Array.isArray(dataRoot[key]) && dataRoot[key].length > 0
+            );
 
-              addActivity('data_import', 'ব্যাকআপ ফাইল থেকে ডেটা পুনরুদ্ধার করা হয়েছে', {
-                fileName: file.name
-              });
-              // ======================================================
-
-              alert('ডেটা সফলভাবে ইমপোর্ট করা হয়েছে।');
-              location.reload();
+            if (availableDataKeys.length === 0) {
+                alert('ফাইলটির ফরম্যাট বোঝা যাচ্ছে না বা এতে কোনো ডেটা পাওয়া যায়নি।');
+                event.target.value = '';
+                return;
             }
-          } catch (err) {
+
+            const importModal = document.getElementById('selectiveImportModal');
+            const overlay = document.getElementById('overlay');
+            const optionsContainer = document.getElementById('import-options-container');
+            
+            document.getElementById('import-file-info').textContent = `আপনি "${file.name}" ফাইলটি আপলোড করেছেন। এতে নিম্নলিখিত ডেটা পাওয়া গেছে:`;
+            optionsContainer.innerHTML = '';
+
+            availableDataKeys.forEach(key => {
+                const count = dataRoot[key].length;
+                const bengaliCount = toBengaliNumber(count);
+                
+                const label = document.createElement('label');
+                label.className = 'backup-option';
+                label.innerHTML = `
+                    <input type="checkbox" data-key="${key}" checked>
+                    <span class="option-label">${dataKeyToName[key]}</span>
+                    <span class="option-count">${bengaliCount} ${unitNames[key]} পাওয়া গেছে</span>
+                `;
+                optionsContainer.appendChild(label);
+            });
+
+            importModal.classList.add('active');
+            overlay.style.display = 'block';
+
+            const confirmImportBtn = document.getElementById('confirmImportBtn');
+            const closeModalBtn = document.getElementById('importModalCloseBtn');
+
+            confirmImportBtn.onclick = () => {
+                const selectedKeys = [];
+                optionsContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedKeys.push(checkbox.dataset.key);
+                });
+
+                if (selectedKeys.length === 0) {
+                    alert('অনুগ্রহ করে ইমপোর্ট করার জন্য কমপক্ষে একটি অপশন নির্বাচন করুন।');
+                    return;
+                }
+
+                // ★★★ নতুন লজিক শুরু ★★★
+                // ধাপ ১: পুরনো মডাল লুকানো এবং প্রগ্রেস মডাল দেখানো
+                importModal.classList.remove('active');
+                
+                const progressModal = document.getElementById('progressModal');
+                const progressBar = document.getElementById('progressBar');
+                const progressStatusText = document.getElementById('progress-status-text');
+                
+                progressModal.classList.add('active');
+                
+                let currentIndex = 0;
+                const importMethod = document.querySelector('input[name="import-method"]:checked').value;
+
+                function processNextKey() {
+                    if (currentIndex < selectedKeys.length) {
+                        const key = selectedKeys[currentIndex];
+                        
+                        // প্রগ্রেস বার এবং টেক্সট আপডেট
+                        progressStatusText.textContent = `${dataKeyToName[key]} ইমপোর্ট করা হচ্ছে...`;
+                        const progressPercentage = ((currentIndex + 1) / selectedKeys.length) * 100;
+                        progressBar.style.width = `${progressPercentage}%`;
+
+                        // আসল ডেটা ইমপোর্টের কাজ
+                        if (importMethod === 'replace') {
+                            if (dataRoot[key]) {
+                                if (key === 'activities') saveActivities(dataRoot[key]);
+                                else db[key] = dataRoot[key];
+                            }
+                        } else if (importMethod === 'merge') {
+                            if (dataRoot[key]) {
+                                if (key === 'activities') {
+                                    const currentActivities = loadActivities();
+                                    const newActivities = dataRoot[key];
+                                    const merged = [...newActivities, ...currentActivities];
+                                    const uniqueActivities = Array.from(new Map(merged.map(item => [item.id, item])).values());
+                                    saveActivities(uniqueActivities);
+                                } else {
+                                    const currentData = db[key] || [];
+                                    const newData = dataRoot[key];
+                                    const merged = [...currentData, ...newData];
+                                    const uniqueData = Array.from(new Map(merged.map(item => [item.id || item, item])).values());
+                                    db[key] = uniqueData;
+                                }
+                            }
+                        }
+                        
+                        currentIndex++;
+                        // পরবর্তী আইটেমের জন্য একটি ছোট বিলম্ব
+                        setTimeout(processNextKey, 300);
+                    } else {
+                        // ইমপোর্ট শেষ হলে
+                        saveDb();
+                        
+                        // লগ তৈরি করার লজিক
+                        if (selectedKeys.length === availableDataKeys.length) {
+                            addActivity('data_import', 'ব্যাকআপ ফাইল থেকে সকল ডেটা পুনরুদ্ধার করা হয়েছে।', { fileName: file.name, method: importMethod });
+                        } else {
+                            selectedKeys.forEach(key => {
+                                const count = dataRoot[key].length;
+                                const bengaliCount = toBengaliNumber(count);
+                                const logDescription = `${bengaliCount} ${unitNames[key]} পুনরুদ্ধার করা হয়েছে।`;
+                                addActivity('data_import', logDescription, { fileName: file.name, method: importMethod, imported: key });
+                            });
+                        }
+
+                        // প্রগ্রেস মডাল লুকিয়ে সফল মডাল দেখানো
+                        progressModal.classList.remove('active');
+                        const successModal = document.getElementById('successModal');
+                        successModal.classList.add('active');
+
+                        document.getElementById('ok-btn').onclick = () => {
+                    localStorage.setItem('forceRedirectToDashboard', 'true'); // ★★★ নতুন লাইন: ফ্ল্যাগ সেট করা হলো
+                          location.reload();
+                      };
+                    }
+                }
+                
+                // ইমপোর্ট প্রক্রিয়া শুরু করা
+                processNextKey();
+                // ★★★ নতুন লজিক শেষ ★★★
+            };
+
+            closeModalBtn.onclick = () => {
+                importModal.classList.remove('active');
+                overlay.style.display = 'none';
+                event.target.value = '';
+            };
+
+        } catch (err) {
             console.error("Import failed:", err);
             alert('ভুল ফাইল ফরম্যাট বা ফাইলটি পড়তে সমস্যা হয়েছে।');
-          } finally {
-            event.target.value = '';
-          }
-        };
-        reader.readAsText(file);
-      });
+        }
+    };
+    reader.readAsText(file);
+});
 
       resetBtn.addEventListener('click', () => {
         if (confirm(
@@ -5938,7 +6281,7 @@
           localStorage.removeItem('lastExportDate'); // শেষ ব্যাকআপের তারিখ মুছে ফেলবে
 
           alert('অ্যাপ সফলভাবে রিসেট করা হয়েছে।');
-          location.reload(); // পেজটি রিলোড করে পরিবর্তন দেখাবে
+          location.reload();
         }
       });
       const loadMoreBtn = document.getElementById('load-more-activities-btn');
@@ -6253,8 +6596,18 @@
         }
 // else ব্লকটি মুছে ফেলা হয়েছে, তাই localStorage-এ লোগো না থাকলে কিছুই হবে না
 
-    const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
-    switchPage(lastPage, true);
+    // ★★★ নতুন এবং চূড়ান্ত সমাধান শুরু ★★★
+        const forceRedirect = localStorage.getItem('forceRedirectToDashboard');
+        
+        if (forceRedirect === 'true') {
+            localStorage.removeItem('forceRedirectToDashboard'); // ফ্ল্যাগটি ব্যবহার করে মুছে ফেলা হলো
+            switchPage('dashboard', true); // জোর করে ড্যাশবোর্ডে পাঠানো হলো
+        } else {
+            const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
+            switchPage(lastPage, true); // স্বাভাবিক আচরণ
+        }
+// ★★★ নতুন এবং চূড়ান্ত সমাধান শেষ ★★★
+
       // --- এই ফাংশনটি খুঁজে বের করে প্রতিস্থাপন করুন ---
 
       function submitPayment() {
@@ -6913,6 +7266,103 @@
             <button class="action-btn-modal payment-btn-cancel">বাতিল</button>
             <button id="submit-payment-btn" class="action-btn-modal btn-submit-modal">জমা দিন</button>
         </div>
+    </div>
+</div>
+<!-- Selective Backup Modal (নতুন HTML কোড) -->
+<div class="modal" id="selectiveBackupModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2>ব্যাকআপ অপশন বেছে নিন</h2>
+            <button class="modal-close" id="backupModalCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 14px; margin-top: 0; color: #666;">আপনি কোন কোন তথ্য ব্যাকআপ করতে চান, তা নিচে থেকে বেছে নিন।</p>
+            <div class="backup-options-container">
+                <label class="backup-option">
+                    <input type="checkbox" id="backup-select-all">
+                    <span class="option-label"><strong>সবকিছু নির্বাচন করুন</strong></span>
+                </label>
+                <hr>
+                <label class="backup-option" data-option-for="customers"></label>
+                <label class="backup-option" data-option-for="bills"></label>
+                <label class="backup-option" data-option-for="routers"></label>
+                <label class="backup-option" data-option-for="ispPayments"></label>
+                <label class="backup-option" data-option-for="locations"></label>
+                <label class="backup-option" data-option-for="activities"></label>
+            </div>
+            <div style="text-align: right; margin-top: 25px;">
+                <button id="createBackupBtn" class="btn btn-submit">ব্যাকআপ তৈরি করুন</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="selectiveImportModal">
+    <div class="modal-content" style="max-width: 550px;">
+        <div class="modal-header">
+            <h2>ইমপোর্ট অপশন বেছে নিন</h2>
+            <button class="modal-close" id="importModalCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="import-file-info" style="font-size: 14px; margin-top: 0; color: #666;"></p>
+            <div id="import-options-container" class="backup-options-container">
+            </div>
+            <div class="import-method-container" style="margin-top: 20px;">
+                <strong style="display: block; margin-bottom: 10px; font-size: 14px;">ইমপোর্টের ধরণ:</strong>
+                <label class="backup-option">
+                    <input type="radio" name="import-method" value="replace" checked>
+                    <span class="option-label">পুরনো ডেটা মুছে নতুন ডেটা যোগ করুন (Replace)</span>
+                </label>
+                <p style="font-size: 12px; color: #888; margin-left: 30px; margin-top: 0;">(সুপারিশকৃত: এটি আপনার বর্তমান ডেটা মুছে ফাইলের ডেটা দিয়ে প্রতিস্থাপন করবে।)</p>
+                
+                <label class="backup-option">
+                    <input type="radio" name="import-method" value="merge">
+                    <span class="option-label">বর্তমান ডেটার সাথে নতুন ডেটা যোগ করুন (Merge)</span>
+                </label>
+                <p style="font-size: 12px; color: #888; margin-left: 30px; margin-top: 0;">(ফাইলের নতুন ডেটাগুলো আপনার বর্তমান ডেটার সাথে যুক্ত হবে।)</p>
+            </div>
+
+            <div class="import-warning" style="background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 6px; padding: 12px; margin-top: 20px; font-size: 13px; color: #8a6d3b;">
+                <strong>সতর্কতা:</strong> ইমপোর্ট করার পর আপনার বর্তমান ডেটা পরিবর্তন হয়ে যাবে। এই কাজটি ফেরানো যাবে না।
+            </div>
+            <div style="text-align: right; margin-top: 25px;">
+                <button id="confirmImportBtn" class="btn btn-submit" style="background-color: #2B6CB0;">ডেটা ইমপোর্ট করুন</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- প্রগ্রেস মডাল -->
+<div class="modal" id="progressModal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <h2 style="font-size: 18px; margin-top: 0;">ডাটা ইমপোর্ট করা হচ্ছে...</h2>
+        <p style="font-size: 14px; color: #6B7280;">অনুগ্রহ করে অপেক্ষা করুন...</p>
+        <div style="width: 100%; background-color: #E2E8F0; border-radius: 20px; margin: 15px 0; overflow: hidden;">
+            <div id="progressBar" style="width: 0%; height: 10px; background-color: #5A67D8; border-radius: 20px; transition: width 0.3s ease;"></div>
+        </div>
+        <div id="progress-status-text" style="font-size: 13px; font-weight: 500; color: #4A5568; height: 20px;"></div>
+    </div>
+</div>
+
+<!-- সফল মডাল -->
+<div class="modal" id="successModal">
+    <div class="modal-content" style="max-width: 380px; text-align: center;">
+        <div style="font-size: 48px; color: #38A169;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>
+        </div>
+        <h2 style="font-size: 18px; margin-top: 10px;">সফল হয়েছে!</h2>
+        <p style="font-size: 14px; margin: 10px 0 20px 0;">আপনার ডেটা সফলভাবে ইমপোর্ট করা হয়েছে।</p>
+        <button class="btn btn-submit" id="ok-btn" style="background-color: #38A169;">ওকে</button>
+    </div>
+</div>
+<!-- ★★★ নতুন: শুধু এক্সপোর্ট প্রগ্রেস মডাল ★★★ -->
+<div class="modal" id="exportProgressModal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <h2 style="font-size: 18px; margin-top: 0;">ব্যাকআপ প্রস্তুত করা হচ্ছে...</h2>
+        <p style="font-size: 14px; color: #6B7280;">প্রক্রিয়া শুরু হচ্ছে...</p>
+        <div style="width: 100%; background-color: #E2E8F0; border-radius: 20px; margin: 15px 0; overflow: hidden;">
+            <div id="export-progress-bar" style="width: 0%; height: 10px; background-color: #22c55e; border-radius: 20px; transition: width 0.3s ease;"></div>
+        </div>
+        <div id="export-progress-status" style="font-size: 13px; font-weight: 500; color: #4A5568; height: 20px;"></div>
     </div>
 </div>
 
