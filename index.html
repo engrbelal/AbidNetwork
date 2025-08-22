@@ -3110,6 +3110,33 @@
       setupMacInput('customerMacContainer');
       setupMacInput('routerMacContainer');
       updateLastExportDate();
+      // ★★★ ব্যাক বাটন নিয়ন্ত্রণের জন্য নতুন কোড ★★★
+      window.addEventListener('popstate', function(event) {
+          // যদি কোনো মডাল বা সাইডবার খোলা থাকে, প্রথমে সেগুলো বন্ধ হবে
+          const activeModal = document.querySelector('.modal.active');
+          if (sidebar.classList.contains('active')) {
+              sidebar.classList.remove('active');
+              overlay.style.display = 'none';
+              // ব্যবহারকারীকে একই পেজে রাখার জন্য URL আবার পুশ করা হচ্ছে
+              const currentPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
+              history.pushState({ page: currentPage }, '', `#${currentPage}`);
+              return;
+          }
+          if (activeModal) {
+              activeModal.classList.remove('active');
+              overlay.style.display = 'none';
+              const currentPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
+              history.pushState({ page: currentPage }, '', `#${currentPage}`);
+              return;
+          }
+      
+          // URL থেকে পেজের নাম বের করে সেই পেজটি দেখানো হচ্ছে
+          let pageId = location.hash.substring(1) || 'dashboard';
+          switchPage(pageId, true); // true দিয়ে কল করা হচ্ছে যাতে এটি আবার history তে পুশ না করে
+      });
+
+// ★★★ নতুন কোডের শেষ ★★★
+
       document.querySelectorAll('#billing .filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelector('#billing .filter-btn.active').classList.remove('active');
@@ -3529,15 +3556,16 @@
         overlay.style.display = 'none';
       });
 
+// --- আপনার পুরনো switchPage ফাংশনটি মুছে এই নতুন কোডটি পেস্ট করুন ---
+
       function switchPage(pageId, isInitialLoad = false) {
-          // ★★★ নতুন কোড: টাইমার বন্ধ করার জন্য ★★★
-          // যদি ব্যবহারকারী ড্যাশবোর্ড ছাড়া অন্য কোনো পেজে যায়, তাহলে নোটিফিকেশনের টাইমারটি বন্ধ করে দেওয়া হবে।
+          // আপনার পুরনো লজিক: টাইমার বন্ধ করা (অপরিবর্তিত)
           if (pageId !== 'dashboard' && notificationInterval) {
               clearInterval(notificationInterval);
-              notificationInterval = null; // টাইমার আইডি রিসেট করা
+              notificationInterval = null;
           }
-          // ★★★ নতুন কোডের শেষ ★★★
       
+          // আপনার পুরনো লজিক: পেজ এবং মেনু আইটেম فعال করা (অপরিবর্তিত)
           document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
           const page = document.getElementById(pageId);
           if (page) page.classList.add('active');
@@ -3551,14 +3579,25 @@
               }
           });
       
+          // ★★★ চূড়ান্ত এবং নির্ভুল সমাধান (এই অংশটি পরিবর্তন করা হয়েছে) ★★★
+          if (!isInitialLoad) {
+              // শুধুমাত্র ফাইলের নাম (যেমন: index.html) ব্যবহার করে URL তৈরি করা হচ্ছে
+              const path = window.location.pathname.split('/').pop(); // <-- মূল পরিবর্তন
+              const newUrl = `${path}#${pageId}`;
+              history.pushState({ page: pageId }, '', newUrl);
+          }
+          // ★★★ নতুন কোডের শেষ ★★★
+      
+          // আপনার পুরনো লজিক: localStorage এ শেষ পেজ সেভ করা (অপরিবর্তিত)
           if (!isInitialLoad) localStorage.setItem(LAST_PAGE_KEY, pageId);
       
+          // আপনার পুরনো লজিক: সাইডবার এবং ওভারলে লুকানো (অপরিবর্তিত)
           sidebar.classList.remove('active');
           overlay.style.display = 'none';
       
+          // আপনার পুরনো লজিক: পেজ অনুযায়ী নির্দিষ্ট ফাংশন কল করা (সম্পূর্ণ অপরিবর্তিত)
           if (pageId === 'add_customer') {
               initializeCustomerForm();
-      
               if (customerToEditId) {
                   const customer = db.customers.find(c => c.id === customerToEditId);
                   if (customer) {
@@ -3566,21 +3605,17 @@
                       customerNameInput.value = customer.name;
                       customerPhoneInput.value = customer.phone;
                       customerHouseInput.value = customer.house;
-      
                       if (defaultBillAmounts.includes(customer.monthlyBill)) {
                           customerBillInput.value = customer.monthlyBill;
                       } else {
                           customerBillInput.value = 'other';
                           customBillAmountInput.value = customer.monthlyBill;
                       }
-      
                       connectionDateInput.value = customer.connectionDate;
                       isFreeUserInput.checked = customer.isFree;
-      
                       customerFormTitle.textContent = 'গ্রাহকের তথ্য আপডেট করুন';
                       customerSubmitBtn.textContent = 'আপডেট করুন';
                       customerCancelBtn.style.display = 'inline-block';
-      
                       customerBillInput.dispatchEvent(new Event('change'));
                       isFreeUserInput.dispatchEvent(new Event('change'));
                       setMacAddress('customerMacContainer', customer.macAddress);
@@ -3588,7 +3623,6 @@
                   customerToEditId = null;
               }
           }
-      
           if (pageId === 'dashboard') renderDashboard();
           if (pageId === 'customers') renderCustomerListPage();
           if (pageId === 'billing') renderBillingPage();
@@ -6663,8 +6697,9 @@
             localStorage.removeItem('forceRedirectToDashboard'); // ফ্ল্যাগটি ব্যবহার করে মুছে ফেলা হলো
             switchPage('dashboard', true); // জোর করে ড্যাশবোর্ডে পাঠানো হলো
         } else {
-            const lastPage = localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
-            switchPage(lastPage, true); // স্বাভাবিক আচরণ
+            const initialPage = window.location.hash.substring(1) || localStorage.getItem(LAST_PAGE_KEY) || 'dashboard';
+switchPage(initialPage, true);
+ // স্বাভাবিক আচরণ
         }
 // ★★★ নতুন এবং চূড়ান্ত সমাধান শেষ ★★★
 
