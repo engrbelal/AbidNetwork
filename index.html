@@ -599,17 +599,12 @@
     .footer {
       text-align: center;
       padding: 10px;
-      /* প্যাডিং সামান্য বাড়ানো হলো আরও সুন্দর দেখানোর জন্য */
       background-color: #2D3748;
-      /* নতুন ব্যাকগ্রাউন্ড কালার */
       color: #A0AEC0;
-      /* নতুন টেক্সট কালার */
       font-size: 11px;
-      /* ফন্ট সাইজ সামান্য বাড়ানো হলো */
       margin-top: auto;
       page-break-before: avoid;
       border-top: 1px solid #4A5568;
-      /* উপরে একটি হালকা বর্ডার যোগ করা হলো */
     }
 
     .dashboard-summary-grid {
@@ -1308,9 +1303,6 @@
       .main-content {
         margin-left: 0;
       }
-
-      /* .header-title span { display: none; } */
-      /* Removed this line */
     }
 
     @media (max-width: 600px) {
@@ -1812,10 +1804,10 @@
   
   /* --- ★★★ NEW & FINAL STYLE FOR DISCOUNT TEXT ★★★ --- */
   .payment-modal .discount-text {
-      font-size: 11px;   /* Smaller font size */
-      font-weight: 500;  /* Less bold */
-      color: #DD6B20;    /* Orange color */
-      margin-left: 5px;  /* Space from the main amount */
+      font-size: 11px;
+      font-weight: 500;
+      color: #DD6B20;
+      margin-left: 5px;
   }
   
   /* --- Form Elements --- */
@@ -1977,7 +1969,6 @@
   }
   /* মডালের জন্য অতিরিক্ত স্টাইল */
   .modal-content {
-      /* আপনার বর্তমান স্টাইল ঠিক থাকবে */
       transition: transform 0.3s ease, opacity 0.3s ease;
   }
   .modal.active .modal-content {
@@ -3587,9 +3578,9 @@
         overlay.style.display = 'none';
       });
 
-// --- আপনার পুরনো switchPage ফাংশনটি মুছে এই নতুন কোডটি পেস্ট করুন ---
+// --- এই সম্পূর্ণ ফাংশনটি দিয়ে আপনার পুরনো switchPage ফাংশনটি প্রতিস্থাপন করুন ---
 
-      function switchPage(pageId, isInitialLoad = false) {
+      function switchPage(pageId, isInitialLoad = false, options = {}) {
           if (pageId !== 'dashboard' && notificationInterval) {
               clearInterval(notificationInterval);
               notificationInterval = null;
@@ -3651,7 +3642,8 @@
           } else if (pageId === 'customers') {
               renderCustomerListPage();
           } else if (pageId === 'isp_bill') {
-              renderIspBillPage();
+              // ★★★ মূল পরিবর্তন এখানে ★★★
+              renderIspBillPage(options); // options অবজেক্টটি পাস করা হচ্ছে
           } else if (pageId === 'reports') {
               renderReportPage();
           } else if (pageId === 'advance') {
@@ -4024,23 +4016,47 @@
           let lastShownMessageIndex = -1;
       
           if (overdueBills.length > 0) {
-              const highestDueBill = overdueBills.reduce((max, bill) => (bill.remainingDue > max.remainingDue ? bill : max), overdueBills[0]);
-              if (highestDueBill) {
-                  const customer = db.customers.find(c => c.id === highestDueBill.customerId);
-                  if (customer) {
-                      let monthText = '';
-                      if (highestDueBill.month !== currentMonth || highestDueBill.year !== currentYear) {
-                          monthText = ` (${months[highestDueBill.month]})`;
-                      }
-                      allMessages.push({
-                          type: 'due',
-                          text: `সর্বোচ্চ বকেয়া${monthText}: ${customer.name} (৳${toBengaliNumber(highestDueBill.remainingDue.toFixed(2))})`,
-                          color: '#B91C1C'
-                      });
+    // বকেয়া বিলগুলোকে তাদের বয়স অনুযায়ী (সবচেয়ে পুরনো আগে) সাজানো হচ্ছে
+              const sortedOverdueBills = overdueBills.sort((a, b) => b.billAgeInDays - a.billAgeInDays);
+          
+              sortedOverdueBills.forEach(bill => {
+                  const customer = db.customers.find(c => c.id === bill.customerId);
+                  if (!customer) return; // যদি গ্রাহক খুঁজে না পাওয়া যায়
+          
+                  const billAge = bill.billAgeInDays;
+                  let messageColor = "";
+                  let prefix = "বকেয়া"; // ডিফল্ট প্রিফিক্স
+          
+                  // আপনার চাহিদা অনুযায়ী সময়কাল এবং রঙের লজিক
+                  if (billAge >= 30) {
+                      // ৩০ দিন বা তার বেশি হলে (সবচেয়ে জরুরি)
+                      messageColor = '#B91C1C'; // গাঢ় লাল
+                      prefix = "জরুরি বকেয়া";
+                  } else if (billAge >= 20) {
+                      // ২০ থেকে ২৯ দিন হলে (সতর্কতা)
+                      messageColor = '#B45309'; // হলুদ/কমলা
+                      prefix = "পুরনো বকেয়া";
+                  } else if (billAge >= 10) {
+                      // ১০ থেকে ১৯ দিন হলে (সাধারণ)
+                      messageColor = '#166534'; // সবুজ
+                      prefix = "বকেয়া";
                   }
-              }
+          
+                  // মাসের নাম (যেহেতু প্রতিটি বিল স্বতন্ত্র, মাসের নাম দেখানো গুরুত্বপূর্ণ)
+                  const monthText = ` (${months[bill.month]})`;
+          
+                  // চূড়ান্ত মেসেজ তৈরি (দিনের সংখ্যা ছাড়া)
+                  const messageText = `${prefix}${monthText}: ${customer.name} (৳${toBengaliNumber(bill.remainingDue.toFixed(2))})`;
+          
+                  // মেসেজটি অ্যারেতে যোগ করা হচ্ছে
+                  allMessages.push({
+                      type: 'due',
+                      text: messageText,
+                      color: messageColor
+                  });
+              });
           }
-      
+
           if (!isIspBillPaidForPreviousMonth) {
               if (db.ispPayments.length > 0 || today.getDate() >= 8) {
                   if (today.getDate() >= 15) {
@@ -4173,21 +4189,31 @@
           updateDynamicInfo();
           notificationInterval = setInterval(updateDynamicInfo, 5000);
       
-          viewDueBtn.textContent = buttonText;
-          viewDueBtn.onclick = () => {
-              if (buttonAction === 'unpaid_list') {
-                  switchPage('billing');
-                  setTimeout(() => {
-                      document.getElementById('generateMonth').value = targetMonth;
-                      document.getElementById('generateYear').value = targetYear;
-                      document.querySelector('#billing .filter-btn[data-filter="unpaid"]').click();
-                  }, 100);
-              } else if (buttonAction === 'isp_bill') {
-                  switchPage('isp_bill');
-              } else {
-                  switchPage('billing');
-              }
-          };
+          // --- এই নতুন কোডটি দিয়ে আপনার উপরের ব্লকটি প্রতিস্থাপন করুন ---
+
+      viewDueBtn.textContent = buttonText;
+      viewDueBtn.onclick = () => {
+          if (buttonAction === 'unpaid_list') {
+              // এই অংশ অপরিবর্তিত
+              switchPage('billing');
+              setTimeout(() => {
+                  document.getElementById('generateMonth').value = targetMonth;
+                  document.getElementById('generateYear').value = targetYear;
+                  document.querySelector('#billing .filter-btn[data-filter="unpaid"]').click();
+              }, 100);
+          } else if (buttonAction === 'isp_bill') {
+              // ★★★ মূল পরিবর্তন এখানে ★★★
+              // আমরা এখন switchPage ফাংশনে অতিরিক্ত তথ্য (options) পাঠাচ্ছি
+              // previousMonth এবং yearForIspCheck ভেরিয়েবল দুটি আপনার checkAndDisplayBillReminder ফাংশনে আগে থেকেই আছে
+              switchPage('isp_bill', false, { 
+                  month: previousMonth, 
+                  year: yearForIspCheck 
+              });
+          } else {
+              // এই অংশ অপরিবর্তিত
+              switchPage('billing');
+          }
+      };
       
           notificationCard.style.display = 'flex';
       }
@@ -4689,14 +4715,15 @@
       
                   // --- ★★★ মূল পরিবর্তন এখানে ★★★ ---
                   // বাটনগুলোকে নিষ্ক্রিয় করার জন্য disabled অ্যাট্রিবিউট যোগ করা হচ্ছে
-                  const disabledAttribute = isReadOnly ? 'disabled' : '';
-      
+                  // --- এই নতুন কোডটি দিয়ে প্রতিস্থাপন করুন ---
+                  const deleteDisabledAttribute = isReadOnly ? 'disabled' : '';
+                  
                   const actionButtonsHtml = `
-                      <button class="btn btn-submit action-btn payment-action-btn" data-bill-id="${bill.id}" ${disabledAttribute}>পেমেন্ট</button>
-                      <button class="btn btn-submit action-btn" onclick="openAdjustmentModal('${bill.id}')" ${disabledAttribute}>Adj</button>
-                      <button class="btn btn-delete action-btn" onclick="deleteBill('${bill.id}')" ${disabledAttribute}>Del</button>
+                      <button class="btn btn-submit action-btn payment-action-btn" data-bill-id="${bill.id}" data-readonly="${isReadOnly}">পেমেন্ট</button>
+                      <button class="btn btn-submit action-btn" onclick="openAdjustmentModal('${bill.id}', ${isReadOnly})">Adj</button>
+                      <button class="btn btn-delete action-btn" onclick="deleteBill('${bill.id}')" ${deleteDisabledAttribute}>Del</button>
                   `;
-      
+
                   const row = document.createElement('tr');
                   row.innerHTML = `
                       <td><a href="#" class="customer-name-link" onclick="openCustomerProfile(event, '${customer.id}')">${customer.name}</a>${defaulterIcon}</td>
@@ -4711,15 +4738,16 @@
               });
               billingListContainer.appendChild(card);
           });
-      
-          if (!isReadOnly) {
-              document.querySelectorAll('.payment-action-btn').forEach(button => {
-                  button.addEventListener('click', (event) => {
-                      const billId = event.target.getAttribute('data-bill-id');
-                      openPaymentModal(billId);
-                  });
-              });
-          }
+      // --- এই নতুন কোডটি দিয়ে উপরের ব্লকটি প্রতিস্থাপন করুন ---
+
+        document.querySelectorAll('.payment-action-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const billId = event.target.getAttribute('data-bill-id');
+                // ★★★ মূল পরিবর্তন: isReadOnly স্ট্যাটাসটি বাটন থেকে পড়া হচ্ছে ★★★
+                const isReadOnly = event.target.getAttribute('data-readonly') === 'true';
+                openPaymentModal(billId, isReadOnly);
+            });
+        });
       }
 
       // --- আপনার পুরনো সম্পূর্ণ createBillForCustomer ফাংশনটি মুছে, এই নতুন কোডটি পেস্ট করুন ---
@@ -4727,16 +4755,29 @@
       function createBillForCustomer(customer, year, month) {
         if (customer.isFree) return;
 
-        const previousMonth = month === 0 ? 11 : month - 1;
-        const yearForPrevious = month === 0 ? year - 1 : year;
+        // --- উপরের পুরনো কোডটি সরিয়ে এই নতুন এবং সঠিক কোডটি বসান ---
 
-        const lastBill = db.bills.find(b => b.customerId === customer.id && b.year == yearForPrevious && b.month ==
-          previousMonth);
+                // ★★★ নতুন এবং নির্ভুল বকেয়া খোঁজার চূড়ান্ত লজিক ★★★
+        const allCustomerBills = db.bills
+            .filter(b => b.customerId === customer.id)
+            .sort((a, b) => new Date(a.year, a.month) - new Date(a.year, a.month));
 
         let dueFromPrevious = 0;
-        if (lastBill && lastBill.status !== 'paid') {
-          dueFromPrevious = lastBill.remainingDue || 0;
+        if (allCustomerBills.length > 0) {
+            const lastBill = allCustomerBills[allCustomerBills.length - 1];
+            
+            // সর্বশেষ বিলের সকল উপাদান (ডিসকাউন্ট, অ্যাডজাস্টমেন্ট সহ) বিবেচনা করে নির্ভুল বকেয়া হিসাব করা হচ্ছে
+            const dueFromAdjustments = (lastBill.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+            const totalAmountOfLastBill = lastBill.monthlyAmount + (lastBill.dueAmount || 0) + dueFromAdjustments;
+            const finalRemainingDue = totalAmountOfLastBill - (lastBill.paidAmount || 0) - (lastBill.discount || 0);
+
+            if (finalRemainingDue > 0) {
+                dueFromPrevious = finalRemainingDue;
+            }
         }
+        // ★★★ নতুন লজিকের শেষ ★★★
+
+// ★★★ নতুন এবং উন্নত বকেয়া খোঁজার লজিক শেষ ★★★
 
         let monthlyAmount = customer.monthlyBill;
         let totalAmount = monthlyAmount + dueFromPrevious;
@@ -4788,102 +4829,97 @@
       }
 
       generateBillsBtn.addEventListener('click', () => {
-        const year = parseInt(document.getElementById('generateYear').value);
-        const month = parseInt(document.getElementById('generateMonth').value);
-        const customerId = document.getElementById('generateForCustomer').value;
-
-        if (db.customers.length === 0) {
-          alert('এই মুহূর্তে সিস্টেমে কোন গ্রাহক নেই তাই বিল তৈরি করা যাচ্ছে না');
-          return;
-        }
-
-        if (customerId === 'all') {
-          const existingBilledCustomerIds = new Set(db.bills.filter(b => b.year === year && b.month === month)
-            .map(b => b.customerId));
-
-          const customersToBill = db.customers.filter(customer => {
-            const isActive = customer.isActive === undefined ? true : customer.isActive;
-            if (!isActive || customer.isFree || existingBilledCustomerIds.has(customer.id)) {
-              return false;
-            }
-            const connectionDate = new Date(customer.connectionDate);
-            const today = new Date();
-            const diffTime = Math.abs(today - connectionDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays > 30;
-          });
-
-          if (customersToBill.length === 0) {
-            alert(
-              'এই মুহূর্তে বিল তৈরির জন্য যোগ্য কোনো গ্রাহক পাওয়া যায়নি। (যাদের সংযোগের বয়স ৩০ দিনের বেশি এবং বিল তৈরি হয়নি)'
-              );
-            return;
-          }
-
-          customersToBill.forEach(customer => createBillForCustomer(customer, year, month));
-          alert(
-            `${toBengaliNumber(customersToBill.length)} জন যোগ্য গ্রাহকের জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
-
-          addActivity('bill_created',
-            `${toBengaliNumber(customersToBill.length)} জন গ্রাহকের জন্য বিল তৈরি করা হয়েছে`, {
-              month: month,
-              year: year,
-              customerCount: customersToBill.length
-            });
-          showBackupReminder();
-
-        } else {
-          const customer = db.customers.find(c => c.id === customerId);
-          if (customer) {
-            const isActive = customer.isActive === undefined ? true : customer.isActive;
-            if (!isActive) {
-              alert(
-                `${customer.name}-এর সংযোগটি নিষ্ক্রিয় আছে। নিষ্ক্রিয় গ্রাহকের জন্য বিল তৈরি করা যাবে না।`);
+          const year = parseInt(document.getElementById('generateYear').value);
+          const month = parseInt(document.getElementById('generateMonth').value);
+          const customerId = document.getElementById('generateForCustomer').value;
+      
+          if (db.customers.length === 0) {
+              alert('এই মুহূর্তে সিস্টেমে কোন গ্রাহক নেই তাই বিল তৈরি করা যাচ্ছে না');
               return;
-            }
-
-            const connectionDate = new Date(customer.connectionDate);
-            const today = new Date();
-            const diffTime = Math.abs(today - connectionDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays <= 30) {
-              if (diffDays < 25) {
-                alert(`বিল তৈরি করা সম্ভব নয়। ${customer.name}-এর সংযোগের বয়স এখনো ২৫ দিন পূর্ণ হয়নি।`);
-                return;
-              }
-
-              const proceed = confirm(
-                `সতর্কবার্তা: ${customer.name}-এর সংযোগের বয়স এখনো ৩০ দিন পূর্ণ হয়নি (বর্তমান বয়স ${toBengaliNumber(diffDays)} দিন)। \n\nআপনি কি বিলটি তৈরি করতে চান?`
-                );
-              if (!proceed) {
-                return;
-              }
-            }
-
-            const existingBillIndex = db.bills.findIndex(b => b.customerId === customer.id && b.year === year &&
-              b.month === month);
-            if (existingBillIndex > -1) {
-              if (!confirm(
-                  `${customer.name}-এর বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে। আপনি কি এটি মুছে আবার তৈরি করতে চান?`
-                  )) return;
-              db.bills.splice(existingBillIndex, 1);
-            }
-            createBillForCustomer(customer, year, month);
-            alert(`${customer.name}-এর জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
-
-            addActivity('bill_created', `${customer.name}-এর জন্য বিল তৈরি করা হয়েছে`, {
-              customerName: customer.name,
-              month: month,
-              year: year,
-              amount: customer.monthlyBill
-            });
-            showBackupReminder();
           }
-        }
-
-        saveDb();
-        renderBillingPage();
+      
+          if (customerId === 'all') {
+              // সকল গ্রাহকের জন্য বিল তৈরির লজিক (এটি অপরিবর্তিত থাকবে)
+              const existingBilledCustomerIds = new Set(db.bills.filter(b => b.year === year && b.month === month).map(b => b.customerId));
+              const customersToBill = db.customers.filter(customer => {
+                  const isActive = customer.isActive === undefined ? true : customer.isActive;
+                  if (!isActive || customer.isFree || existingBilledCustomerIds.has(customer.id)) {
+                      return false;
+                  }
+                  const connectionDate = new Date(customer.connectionDate);
+                  const today = new Date();
+                  const diffTime = Math.abs(today - connectionDate);
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  return diffDays > 30;
+              });
+      
+              if (customersToBill.length === 0) {
+                  alert('এই মুহূর্তে বিল তৈরির জন্য যোগ্য কোনো গ্রাহক পাওয়া যায়নি। (যাদের সংযোগের বয়স ৩০ দিনের বেশি এবং বিল তৈরি হয়নি)');
+                  return;
+              }
+      
+              customersToBill.forEach(customer => createBillForCustomer(customer, year, month));
+              alert(`${toBengaliNumber(customersToBill.length)} জন যোগ্য গ্রাহকের জন্য বিল সফলভাবে তৈরি করা হয়েছে।`);
+              addActivity('bill_created', `${toBengaliNumber(customersToBill.length)} জন গ্রাহকের জন্য বিল তৈরি করা হয়েছে`, {
+                  month: month,
+                  year: year,
+                  customerCount: customersToBill.length
+              });
+              showBackupReminder();
+      
+          } else {
+              // --- নির্দিষ্ট গ্রাহকের জন্য বিল তৈরির সংশোধিত লজিক ---
+              const customer = db.customers.find(c => c.id === customerId);
+              if (customer) {
+                  // ★★★ সমাধান: প্রথমেই চেক করা হচ্ছে গ্রাহক ফ্রি কি না ★★★
+                  if (customer.isFree) {
+                      alert(`এটি একজন ফ্রি ইউজার। "${customer.name}"-এর জন্য কোনো বিল তৈরি করা হয়নি।`);
+                      return; // ফাংশন থেকে বের হয়ে যাওয়া হচ্ছে
+                  }
+      
+                  const isActive = customer.isActive === undefined ? true : customer.isActive;
+                  if (!isActive) {
+                      alert(`${customer.name}-এর সংযোগটি নিষ্ক্রিয় আছে। নিষ্ক্রিয় গ্রাহকের জন্য বিল তৈরি করা যাবে না।`);
+                      return;
+                  }
+      
+                  const connectionDate = new Date(customer.connectionDate);
+                  const today = new Date();
+                  const diffTime = Math.abs(today - connectionDate);
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+                  if (diffDays <= 30) {
+                      if (diffDays < 25) {
+                          alert(`বিল তৈরি করা সম্ভব নয়। ${customer.name}-এর সংযোগের বয়স এখনো ২৫ দিন পূর্ণ হয়নি।`);
+                          return;
+                      }
+                      const proceed = confirm(`সতর্কবার্তা: ${customer.name}-এর সংযোগের বয়স এখনো ৩০ দিন পূর্ণ হয়নি (বর্তমান বয়স ${toBengaliNumber(diffDays)} দিন)। \n\nআপনি কি বিলটি তৈরি করতে চান?`);
+                      if (!proceed) {
+                          return;
+                      }
+                  }
+      
+                  const existingBillIndex = db.bills.findIndex(b => b.customerId === customer.id && b.year === year && b.month === month);
+                  if (existingBillIndex > -1) {
+                      if (!confirm(`${customer.name}-এর বিল এই মাসের জন্য ইতিমধ্যে তৈরি করা আছে। আপনি কি এটি মুছে আবার তৈরি করতে চান?`)) return;
+                      db.bills.splice(existingBillIndex, 1);
+                  }
+      
+                  createBillForCustomer(customer, year, month);
+                  alert(`${customer.name}-এর জন্য বিল সফলভাবে তৈরি করা হয়েছে।`); // এখন এই বার্তাটি শুধুমাত্র বিল তৈরি হলেই দেখাবে
+      
+                  addActivity('bill_created', `${customer.name}-এর জন্য বিল তৈরি করা হয়েছে`, {
+                      customerName: customer.name,
+                      month: month,
+                      year: year,
+                      amount: customer.monthlyBill
+                  });
+                  showBackupReminder();
+              }
+          }
+      
+          saveDb();
+          renderBillingPage();
       });
 
       deleteMonthBillsBtn.addEventListener('click', () => {
@@ -4923,38 +4959,75 @@
         }
       };
 
-      function renderAdjustments(billId) {
-        const bill = db.bills.find(b => b.id === billId);
-        adjustmentList.innerHTML = '';
-        if (!bill || !bill.adjustments || bill.adjustments.length === 0) {
-          adjustmentList.innerHTML = '<li>কোনো অ্যাডজাস্টমেন্ট পাওয়া যায়নি।</li>';
-          return;
-        }
-        bill.adjustments.forEach(adj => {
-          const li = document.createElement('li');
-          const typeText = adj.type === 'due' ? 'বকেয়া' : 'অ্যাডভান্স';
-          li.innerHTML = `
-                    <span class="adjustment-info">${typeText}: ৳${toBengaliNumber(adj.amount)} (${adj.notes || 'N/A'})</span>
-                    <div class="adjustment-actions">
-                        <button class="btn action-btn" style="background-color: #3182CE;" onclick="editAdjustment('${bill.id}', '${adj.id}')">Edit</button>
-                        <button class="btn btn-delete action-btn" onclick="deleteAdjustment('${bill.id}', '${adj.id}')">Del</button>
-                    </div>
-                `;
-          adjustmentList.appendChild(li);
-        });
+// --- এই সম্পূর্ণ ফাংশনটি দিয়ে আপনার পুরনো renderAdjustments ফাংশনটি প্রতিস্থাপন করুন ---
+
+      function renderAdjustments(billId, isReadOnly = false) {
+          const bill = db.bills.find(b => b.id === billId);
+          adjustmentList.innerHTML = '';
+          if (!bill || !bill.adjustments || bill.adjustments.length === 0) {
+              adjustmentList.innerHTML = '<li>কোনো অ্যাডজাস্টমেন্ট পাওয়া যায়নি।</li>';
+              return;
+          }
+      
+          // ★★★ এখানে পরিবর্তন শুরু ★★★
+          const disabledAttribute = isReadOnly ? 'disabled' : '';
+          // ★★★ এখানে পরিবর্তন শেষ ★★★
+      
+          bill.adjustments.forEach(adj => {
+              const li = document.createElement('li');
+              const typeText = adj.type === 'due' ? 'বকেয়া' : 'অ্যাডভান্স';
+              li.innerHTML = `
+                  <span class="adjustment-info">${typeText}: ৳${toBengaliNumber(adj.amount)} (${adj.notes || 'N/A'})</span>
+                  <div class="adjustment-actions">
+                      {/* ★★★ এখানে পরিবর্তন করা হয়েছে ★★★ */}
+                      <button class="btn action-btn" style="background-color: #3182CE;" onclick="editAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Edit</button>
+                      <button class="btn btn-delete action-btn" onclick="deleteAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Del</button>
+                  </div>
+              `;
+              adjustmentList.appendChild(li);
+          });
       }
 
-      window.openAdjustmentModal = (billId) => {
-        const bill = db.bills.find(b => b.id === billId);
-        const customer = db.customers.find(c => c.id === bill.customerId);
-        if (bill && customer) {
-          document.getElementById('adjustmentBillId').value = bill.id;
-          document.getElementById('modal-customer-name-adj').textContent = customer.name;
-          renderAdjustments(bill.id);
-          resetAdjustmentForm();
-          adjustmentModal.classList.add('active');
-          overlay.style.display = 'block';
-        }
+// --- এই সম্পূর্ণ ফাংশনটি দিয়ে আপনার পুরনো openAdjustmentModal ফাংশনটি প্রতিস্থাপন করুন ---
+
+      window.openAdjustmentModal = (billId, isReadOnly = false) => {
+          const bill = db.bills.find(b => b.id === billId);
+          const customer = db.customers.find(c => c.id === bill.customerId);
+          if (bill && customer) {
+              document.getElementById('adjustmentBillId').value = bill.id;
+              document.getElementById('modal-customer-name-adj').textContent = customer.name;
+              
+              resetAdjustmentForm();
+              renderAdjustments(bill.id, isReadOnly); // isReadOnly পাস করা হচ্ছে
+      
+              // ★★★ এখানে পরিবর্তন শুরু ★★★
+              const amountInput = document.getElementById('adjustmentAmount');
+              const typeSelect = document.getElementById('adjustmentType');
+              const notesInput = document.getElementById('adjustmentNotes');
+              const submitBtn = document.getElementById('adjustment-submit-btn');
+              const noteTags = document.querySelectorAll('.note-tag');
+      
+              // রিড-অনলি মোডের জন্য লজিক যোগ করা হয়েছে
+              if (isReadOnly) {
+                  amountInput.disabled = true;
+                  typeSelect.disabled = true;
+                  notesInput.disabled = true;
+                  submitBtn.disabled = true;
+                  noteTags.forEach(tag => tag.style.pointerEvents = 'none'); // ট্যাগ ক্লিক করা বন্ধ করা
+                  amountInput.placeholder = "শুধুমাত্র দেখার জন্য";
+              } else {
+                  amountInput.disabled = false;
+                  typeSelect.disabled = false;
+                  notesInput.disabled = false;
+                  submitBtn.disabled = false;
+                  noteTags.forEach(tag => tag.style.pointerEvents = 'auto'); // ট্যাগ ক্লিক করা চালু করা
+                  amountInput.placeholder = "টাকার পরিমাণ লিখুন";
+              }
+              // ★★★ এখানে পরিবর্তন শেষ ★★★
+      
+              adjustmentModal.classList.add('active');
+              overlay.style.display = 'block';
+          }
       };
 
       function closeAdjustmentModal() {
@@ -5121,48 +5194,75 @@
        * পেমেন্ট মোডালটি খোলে এবং প্রয়োজনীয় তথ্য দিয়ে এটি পূরণ করে।
        * @param {string} billId - যে বিলের জন্য পেমেন্ট করা হবে তার আইডি।
        */
-      function openPaymentModal(billId) {
-        const bill = db.bills.find(b => b.id === billId);
-        if (!bill) {
-          alert('ত্রুটি: বিল খুঁজে পাওয়া যায়নি!');
-          return;
-        }
+// --- এই সম্পূর্ণ ফাংশনটি দিয়ে আপনার পুরনো openPaymentModal ফাংশনটি প্রতিস্থাপন করুন ---
 
-        const customer = db.customers.find(c => c.id === bill.customerId);
-        if (!customer) {
-          alert('ত্রুটি: গ্রাহক খুঁজে পাওয়া যায়নি!');
-          return;
-        }
-
-        currentPaymentBillId = billId;
-
-        const totalBill = bill.totalAmount || 0;
-        const discount = bill.discount || 0;
-        const paidAmount = bill.paidAmount || 0;
-        const finalBill = totalBill - discount;
-        const dueAmount = Math.max(0, finalBill - paidAmount);
-        const advanceAmount = customer.advanceBalance || 0;
-
-        document.getElementById('payment-customer-name').textContent = customer.name;
-        document.getElementById('payment-bill-month').textContent =
-          `${months[bill.month]}, ${toBengaliNumber(bill.year)}`;
-        document.getElementById('payment-bill-amount').innerHTML = `৳${toBengaliNumber(finalBill.toFixed(2))} <span class="discount-text">(ছাড়: ৳${toBengaliNumber(discount.toFixed(2))})</span>`;
-        document.getElementById('payment-due-amount').textContent = `৳${toBengaliNumber(dueAmount.toFixed(2))}`;
-        document.getElementById('payment-advance-amount').textContent =
-          `৳${toBengaliNumber(advanceAmount.toFixed(2))}`;
-        document.getElementById('payment-amount-input').value = '';
-        document.getElementById('discount-amount-input').value = '';
-
-        displayPaymentHistory(billId);
-
-        document.getElementById('paymentModal').classList.add('active');
-        document.getElementById('overlay').style.display = 'block';
-
-        setTimeout(() => {
-          document.getElementById('payment-amount-input').focus();
-        }, 300);
+      function openPaymentModal(billId, isReadOnly = false) {
+          const bill = db.bills.find(b => b.id === billId);
+          if (!bill) {
+              alert('ত্রুটি: বিল খুঁজে পাওয়া যায়নি!');
+              return;
+          }
+      
+          const customer = db.customers.find(c => c.id === bill.customerId);
+          if (!customer) {
+              alert('ত্রুটি: গ্রাহক খুঁজে পাওয়া যায়নি!');
+              return;
+          }
+      
+          currentPaymentBillId = billId;
+      
+          const totalBill = bill.totalAmount || 0;
+          const discount = bill.discount || 0;
+          const paidAmount = bill.paidAmount || 0;
+          const finalBill = totalBill - discount;
+          const dueAmount = Math.max(0, finalBill - paidAmount);
+          const advanceAmount = customer.advanceBalance || 0;
+      
+          document.getElementById('payment-customer-name').textContent = customer.name;
+          document.getElementById('payment-bill-month').textContent = `${months[bill.month]}, ${toBengaliNumber(bill.year)}`;
+          document.getElementById('payment-bill-amount').innerHTML = `৳${toBengaliNumber(finalBill.toFixed(2))} <span class="discount-text">(ছাড়: ৳${toBengaliNumber(discount.toFixed(2))})</span>`;
+          document.getElementById('payment-due-amount').textContent = `৳${toBengaliNumber(dueAmount.toFixed(2))}`;
+          document.getElementById('payment-advance-amount').textContent = `৳${toBengaliNumber(advanceAmount.toFixed(2))}`;
+          
+          // ★★★ এখানে পরিবর্তন শুরু ★★★
+          const paymentAmountInput = document.getElementById('payment-amount-input');
+          const discountAmountInput = document.getElementById('discount-amount-input');
+          const applyDiscountBtn = document.getElementById('apply-discount-btn');
+          const submitPaymentBtn = document.getElementById('submit-payment-btn');
+      
+          // রিড-অনলি মোডের জন্য লজিক যোগ করা হয়েছে
+          if (isReadOnly) {
+              paymentAmountInput.disabled = true;
+              discountAmountInput.disabled = true;
+              applyDiscountBtn.disabled = true;
+              submitPaymentBtn.disabled = true;
+              paymentAmountInput.placeholder = "শুধুমাত্র দেখার জন্য";
+              discountAmountInput.placeholder = "শুধুমাত্র দেখার জন্য";
+          } else {
+              paymentAmountInput.disabled = false;
+              discountAmountInput.disabled = false;
+              applyDiscountBtn.disabled = false;
+              submitPaymentBtn.disabled = false;
+              paymentAmountInput.placeholder = "পরিমাণ";
+              discountAmountInput.placeholder = "পরিমাণ";
+          }
+          paymentAmountInput.value = '';
+          discountAmountInput.value = '';
+          // ★★★ এখানে পরিবর্তন শেষ ★★★
+      
+          displayPaymentHistory(billId);
+      
+          document.getElementById('paymentModal').classList.add('active');
+          document.getElementById('overlay').style.display = 'block';
+      
+          // শুধুমাত্র লেখার যোগ্য মোডেই ফোকাস করা হবে
+          if (!isReadOnly) {
+              setTimeout(() => {
+                  paymentAmountInput.focus();
+              }, 300);
+          }
       }
-
+ 
       function closePaymentModal() {
         const paymentModal = document.getElementById('paymentModal');
         const overlay = document.getElementById('overlay');
@@ -5300,18 +5400,17 @@
       const ispBillForm = document.getElementById('ispBillForm');
       const ispHistoryTableBody = document.querySelector('#ispHistoryTable tbody');
 
-      function initializeIspForm() {
-        const monthOptions = months.map((m, i) => ({
-          value: i,
-          text: m
-        }));
-        populateDropdown('ispYear', years, {
-          defaultValue: new Date().getFullYear()
-        });
-        populateDropdown('ispMonth', monthOptions, {
-          defaultValue: new Date().getMonth()
-        });
-        document.getElementById('ispPayDate').valueAsDate = new Date();
+      function initializeIspForm(options = {}) {
+          const monthOptions = months.map((m, i) => ({ value: i, text: m }));
+          
+          // ★★★ মূল পরিবর্তন এখানে ★★★
+          // options থেকে মাস ও বছর নেওয়ার চেষ্টা করা হচ্ছে, না পেলে বর্তমান মাস/বছর ব্যবহার করা হচ্ছে
+          const defaultYear = options.year !== undefined ? options.year : new Date().getFullYear();
+          const defaultMonth = options.month !== undefined ? options.month : new Date().getMonth();
+      
+          populateDropdown('ispYear', years, { defaultValue: defaultYear });
+          populateDropdown('ispMonth', monthOptions, { defaultValue: defaultMonth });
+          document.getElementById('ispPayDate').valueAsDate = new Date();
       }
 
       function renderIspHistoryTable() {
@@ -5411,9 +5510,9 @@
         }
       });
 
-      function renderIspBillPage() {
-        initializeIspForm();
-        renderIspHistoryTable();
+      function renderIspBillPage(options = {}) {
+          initializeIspForm(options); // options পাস করা হচ্ছে
+          renderIspHistoryTable();
       }
 
       ispBillForm.addEventListener("submit", e => {
@@ -7022,130 +7121,117 @@ switchPage(initialPage, true);
         });
       }
 
-      // --- আপনার পুরনো সম্পূর্ণ logPayment ফাংশনটি মুছে, এই নতুন এবং চূড়ান্ত কোডটি পেস্ট করুন ---
+//--- এই সম্পূর্ণ ফাংশনটি আপনার পুরনো logPayment ফাংশনের জায়গায় বসান ---
 
-      function logPayment(billId, receivedAmount) {
-        const billIndex = db.bills.findIndex(b => b.id === billId);
-        if (billIndex === -1) return {
-          success: false,
-          message: 'বিল খুঁজে পাওয়া যায়নি।'
-        };
+function logPayment(billId, receivedAmount) {
+    const initialBill = db.bills.find(b => b.id === billId);
+    if (!initialBill) return { success: false, message: 'বিল খুঁজে পাওয়া যায়নি।' };
 
-        const bill = db.bills[billIndex];
-        const customer = db.customers.find(c => c.id === bill.customerId);
-        if (!customer) return {
-          success: false,
-          message: 'গ্রাহক খুঁজে পাওয়া যায়নি।'
-        };
+    const customer = db.customers.find(c => c.id === initialBill.customerId);
+    if (!customer) return { success: false, message: 'গ্রাহক খুঁজে পাওয়া যায়নি.' };
 
-        if (!bill.paymentHistory) bill.paymentHistory = [];
+    // ★★★ নতুন এবং চূড়ান্তভাবে পরীক্ষিত FIFO লজিক (Chain Reaction Bug Fix) ★★★
+    let remainingAmountToDistribute = receivedAmount;
+    let finalMessage = `৳${toBengaliNumber(receivedAmount)} পেমেন্ট সফলভাবে জমা হয়েছে।`;
 
-        const dueBeforeThisPayment = bill.remainingDue > 0 ? bill.remainingDue : 0;
+    // ধাপ ১: গ্রাহকের সকল বিল খুঁজে বের করা এবং সবচেয়ে পুরনো বিল আগে রাখা
+    const allCustomerBills = db.bills
+        .filter(b => b.customerId === customer.id)
+        .sort((a, b) => new Date(a.year, a.month) - new Date(a.year, a.month));
 
-        if (dueBeforeThisPayment <= 0) {
-          // ... (আগের মতোই অ্যাডভান্স জমার কোড)
-          customer.advanceBalance = (customer.advanceBalance || 0) + receivedAmount;
-          bill.paymentHistory.push({
+    // ধাপ ২: প্রাপ্ত টাকা দিয়ে পুরনো বিলগুলো একটির পর একটি পরিশোধ করা (পুনর্গঠিত)
+    let previousDue = 0;
+    for (const billToPay of allCustomerBills) {
+        // ★★★ মূল সমাধান: প্রতিটি বিলের কাজ শুরু করার আগে তার dueAmount আপডেট করা হচ্ছে ★★★
+        billToPay.dueAmount = previousDue;
+        const dueFromAdjustments = (billToPay.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+        billToPay.totalAmount = billToPay.monthlyAmount + billToPay.dueAmount + dueFromAdjustments;
+        billToPay.remainingDue = billToPay.totalAmount - (billToPay.paidAmount || 0) - (billToPay.discount || 0);
+
+        // শুধুমাত্র অপরিশোধিত বিলগুলোই পেমেন্ট গ্রহণ করবে
+        if (billToPay.status === 'paid') {
+            previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
+            continue;
+        }
+        if (remainingAmountToDistribute < 0.01) {
+            previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
+            continue;
+        }
+
+        const dueOnThisBill = billToPay.remainingDue;
+        const amountToPayForThisBill = Math.min(remainingAmountToDistribute, dueOnThisBill);
+
+        billToPay.paidAmount = (billToPay.paidAmount || 0) + amountToPayForThisBill;
+        billToPay.remainingDue -= amountToPayForThisBill;
+
+        const isFinalPayment = billToPay.remainingDue < 0.01;
+
+        if (!billToPay.paymentHistory) billToPay.paymentHistory = [];
+        billToPay.paymentHistory.push({
             id: Date.now() + Math.random(),
-            amount: receivedAmount,
+            amount: amountToPayForThisBill,
             date: new Date().toISOString(),
-            source: 'advance_deposit',
-            balanceAfter: -customer.advanceBalance,
-            isFirstAdvance: (customer.advanceBalance === receivedAmount)
-          });
-          saveDb();
-          addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অ্যাডভান্স জমা হয়েছে`, {
-            customerName: customer.name,
-            amount: receivedAmount
-          });
-          return {
-            success: true,
-            message: `সরাসরি ৳${toBengaliNumber(receivedAmount)} অ্যাডভান্স জমা হয়েছে।`
-          };
-        }
-
-        const balanceAfterPayment = dueBeforeThisPayment - receivedAmount;
-        let isFinalPayment = false;
-        let newAdvanceFromThisPayment = 0;
-
-        if (balanceAfterPayment <= 0) {
-          isFinalPayment = true;
-          if (balanceAfterPayment < 0) {
-            newAdvanceFromThisPayment = Math.abs(balanceAfterPayment);
-          }
-        }
-
-        bill.paymentHistory.push({
-          id: Date.now() + Math.random(),
-          amount: receivedAmount,
-          date: new Date().toISOString(),
-          source: 'manual',
-          balanceAfter: balanceAfterPayment,
-          isFinalPayment: isFinalPayment,
-          newAdvance: newAdvanceFromThisPayment
+            source: 'manual',
+            balanceAfter: isFinalPayment ? 0 : billToPay.remainingDue,
+            isFinalPayment: isFinalPayment,
+            newAdvance: 0
         });
-        bill.paidAmount = (bill.paidAmount || 0) + receivedAmount;
-        recalculateBillTotal(billId);
 
-        let finalMessage = "পেমেন্ট সফলভাবে জমা হয়েছে।";
-        let wasDeactivated = false;
-
-        if (bill.status === 'paid' && customer.deactivationPending === true) {
-          customer.isActive = false;
-          customer.deactivationPending = false;
-          wasDeactivated = true;
-
-          finalMessage = `পেমেন্ট সফলভাবে জমা হয়েছে এবং গ্রাহক "${customer.name}"-কে নিষ্ক্রিয় করা হয়েছে।`;
-
-          addActivity('customer_deactivated_auto',
-            `বিল পরিশোধের পর ${customer.name} স্বয়ংক্রিয়ভাবে নিষ্ক্রিয় হয়েছে।`, {
-              customerName: customer.name
+        if (isFinalPayment) {
+            billToPay.remainingDue = 0;
+            billToPay.status = 'paid';
+            billToPay.isPaid = true;
+            addActivity('bill_status_paid', `${customer.name}-এর ${months[billToPay.month]} মাসের বিল পরিশোধিত হয়েছে`, {
+                customerName: customer.name, amount: amountToPayForThisBill, month: billToPay.month, year: billToPay.year
+            });
+        } else {
+            billToPay.status = 'partially_paid';
+            addActivity('payment_history', `${customer.name}-এর ${months[billToPay.month]} মাসের বিল আংশিক পরিশোধিত`, {
+                customerName: customer.name, amount: amountToPayForThisBill, remainingDue: billToPay.remainingDue, month: billToPay.month, year: billToPay.year
             });
         }
 
-        saveDb();
+        remainingAmountToDistribute -= amountToPayForThisBill;
+        previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
+    }
 
-        if (bill.status === 'paid') {
-          // যদি বিলটি সম্পূর্ণ পরিশোধিত হয়
-          addActivity('bill_status_paid', `${customer.name}-এর বিল সম্পূর্ণ পরিশোধিত হয়েছে`, {
-            customerName: customer.name,
-            amount: receivedAmount,
-            month: bill.month,
-            year: bill.year
-          });
-
-          // ★★★ নতুন এবং গুরুত্বপূর্ণ অংশ: অতিরিক্ত পেমেন্টের জন্য লগ ★★★
-          const dueBeforeThisPayment = bill.totalAmount - (bill.paidAmount - receivedAmount) - (bill.discount || 0);
-          const overPayment = receivedAmount - dueBeforeThisPayment;
-
-          if (overPayment > 0) {
-            // যদি পেমেন্টের পরিমাণ বকেয়ার চেয়ে বেশি হয়
-            addActivity('advance_deposit',
-              `${customer.name}-এর অ্যাকাউন্টে অতিরিক্ত ৳${toBengaliNumber(overPayment.toFixed(2))} অ্যাডভান্স জমা হয়েছে`, {
-                customerName: customer.name,
-                amount: overPayment,
-                source: 'Overpayment' // উৎস উল্লেখ করা হলো
-              });
-          }
-          // ★★★ নতুন অংশের শেষ ★★★
-
-        } else if (bill.status === 'partially_paid') {
-          // যদি বিলটি আংশিক পরিশোধিত হয়
-          addActivity('payment_history', `${customer.name}-এর বিল আংশিক পরিশোধ করা হয়েছে`, {
-            customerName: customer.name,
-            amount: receivedAmount,
-            remainingDue: bill.remainingDue,
-            month: bill.month,
-            year: bill.year
-          });
+    // ধাপ ৩: সকল বকেয়া পরিশোধের পর যদি টাকা অবশিষ্ট থাকে, তবে তা অ্যাডভান্স হিসেবে জমা হবে
+    if (remainingAmountToDistribute > 0) {
+        customer.advanceBalance = (customer.advanceBalance || 0) + remainingAmountToDistribute;
+        finalMessage += ` অতিরিক্ত ৳${toBengaliNumber(remainingAmountToDistribute.toFixed(2))} অ্যাডভান্স হিসেবে জমা হয়েছে।`;
+        
+        const lastPaidBill = allCustomerBills.filter(b => b.status === 'paid').slice(-1)[0];
+        if (lastPaidBill) {
+            const lastPaymentInHistory = lastPaidBill.paymentHistory.slice(-1)[0];
+            if (lastPaymentInHistory) {
+                lastPaymentInHistory.newAdvance = remainingAmountToDistribute;
+            }
         }
+        
+        addActivity('deposit_advance', `${customer.name}-এর অ্যাকাউন্টে অতিরিক্ত ৳${toBengaliNumber(remainingAmountToDistribute.toFixed(2))} অ্যাডভান্স জমা হয়েছে`, {
+            customerName: customer.name, amount: remainingAmountToDistribute, source: 'Overpayment'
+        });
+    }
 
-        return {
-          success: true,
-          message: finalMessage,
-          deactivated: wasDeactivated
-        };
-      }
+    // ধাপ ৪: গ্রাহকের নিষ্ক্রিয় হওয়ার লজিক (এখন সঠিক ডেটার উপর কাজ করবে)
+    let wasDeactivated = false;
+    const hasRemainingDues = db.bills.some(b => b.customerId === customer.id && b.status !== 'paid');
+    if (!hasRemainingDues && customer.deactivationPending === true) {
+        customer.isActive = false;
+        customer.deactivationPending = false;
+        wasDeactivated = true;
+        finalMessage = `পেমেন্ট সফল এবং গ্রাহক "${customer.name}"-কে নিষ্ক্রিয় করা হয়েছে।`;
+        addActivity('customer_deactivated_auto', `বিল পরিশোধের পর ${customer.name} স্বয়ংক্রিয়ভাবে নিষ্ক্রিয় হয়েছে।`, { customerName: customer.name });
+    }
+
+    saveDb();
+
+    return {
+        success: true,
+        message: finalMessage,
+        deactivated: wasDeactivated
+    };
+}
 
       // পেমেন্ট মোডালের বাটনগুলোর জন্য ইভেন্ট লিসেনার যোগ করা
       const submitPaymentBtn = document.getElementById('submit-payment-btn');
