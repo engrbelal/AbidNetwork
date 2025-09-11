@@ -4979,7 +4979,6 @@
               li.innerHTML = `
                   <span class="adjustment-info">${typeText}: ৳${toBengaliNumber(adj.amount)} (${adj.notes || 'N/A'})</span>
                   <div class="adjustment-actions">
-                      {/* ★★★ এখানে পরিবর্তন করা হয়েছে ★★★ */}
                       <button class="btn action-btn" style="background-color: #3182CE;" onclick="editAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Edit</button>
                       <button class="btn btn-delete action-btn" onclick="deleteAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Del</button>
                   </div>
