@@ -3584,6 +3584,52 @@
           if (pageId !== 'dashboard' && notificationInterval) {
               clearInterval(notificationInterval);
               notificationInterval = null;
+              // ★★★ নতুন রিসেট লজিক শুরু ★★★
+          if (Object.keys(options).length === 0) {
+                  if (pageId === 'billing') {
+                      // --- বিল ব্যবস্থাপনা পেইজ রিসেট ---
+                      const billingSearchInput = document.getElementById('billing-search-input');
+                      if (billingSearchInput) billingSearchInput.value = '';
+              
+                      const activeFilter = document.querySelector('#billing .filter-btn.active');
+                      if (activeFilter) activeFilter.classList.remove('active');
+                      
+                      const allFilterBtn = document.querySelector('#billing .filter-btn[data-filter="all"]');
+                      if (allFilterBtn) allFilterBtn.classList.add('active');
+                  } 
+                  else if (pageId === 'add_customer') {
+                      // --- গ্রাহক যোগ করার ফর্ম রিসেট ---
+                      if (typeof resetCustomerForm === 'function') {
+                          resetCustomerForm();
+                      }
+                  } 
+                  else if (pageId === 'advance') {
+                      // --- রাউটার পেইজ রিসেট ---
+                      const formContainer = document.getElementById('routerFormContainer');
+                      if (formContainer && formContainer.classList.contains('active')) {
+                          formContainer.classList.remove('active');
+                      }
+              
+                      const toggleBtn = document.getElementById('toggleRouterFormBtn');
+                      if (toggleBtn) {
+                          toggleBtn.textContent = 'নতুন রাউটার যোগ করুন';
+                      }
+              
+                      const routerForm = document.getElementById('routerForm');
+                      if (routerForm) {
+                          routerForm.reset();
+                          document.getElementById('routerId').value = '';
+                      }
+                  }
+                  else if (pageId === 'dashboard') {
+                      // --- ড্যাশবোর্ড পেইজ রিফ্রেশ/রিলোড ---
+                      // renderDashboard() ফাংশনটি কল করা নিশ্চিত করে যে ড্যাশবোর্ডের ডেটা সবসময় আপ-টু-ডেট থাকবে।
+                      if (typeof renderDashboard === 'function') {
+                          renderDashboard();
+                      }
+                  }
+              }
+              // ★★★ নতুন রিসেট লজিক শেষ ★★★
           }
       
           document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -3610,7 +3656,7 @@
       
           if (pageId === 'billing') {
               initializeBillingForm();
-              renderBillingPage();
+              renderBillingPage(options);
           } else if (pageId === 'add_customer') {
               initializeCustomerForm();
               if (customerToEditId) {
@@ -4979,6 +5025,7 @@
               li.innerHTML = `
                   <span class="adjustment-info">${typeText}: ৳${toBengaliNumber(adj.amount)} (${adj.notes || 'N/A'})</span>
                   <div class="adjustment-actions">
+                      {/* ★★★ এখানে পরিবর্তন করা হয়েছে ★★★ */}
                       <button class="btn action-btn" style="background-color: #3182CE;" onclick="editAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Edit</button>
                       <button class="btn btn-delete action-btn" onclick="deleteAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Del</button>
                   </div>
