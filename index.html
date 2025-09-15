@@ -3495,7 +3495,7 @@
         const activitiesToRender = allActivities.slice(startIndex, endIndex);
 
         let newActivitiesHtml = activitiesToRender.map(activity => {
-          const config = ACTIVITY_TYPES[activity.type] || ACTIVITY_TYPES['data_backup'];
+          const config = ACTIVITY_TYPES[activity.type] || { title: 'অজানা কার্যক্রম', icon: '❓', className: '' };
           const timeStr = formatActivityTime(activity.timestamp);
 
           let metadataHtml = '';
@@ -7167,117 +7167,117 @@ switchPage(initialPage, true);
         });
       }
 
-//--- এই সম্পূর্ণ ফাংশনটি আপনার পুরনো logPayment ফাংশনের জায়গায় বসান ---
+      //--- এই সম্পূর্ণ ফাংশনটি আপনার পুরনো logPayment ফাংশনের জায়গায় বসান ---
 
-function logPayment(billId, receivedAmount) {
-    const initialBill = db.bills.find(b => b.id === billId);
-    if (!initialBill) return { success: false, message: 'বিল খুঁজে পাওয়া যায়নি।' };
-
-    const customer = db.customers.find(c => c.id === initialBill.customerId);
-    if (!customer) return { success: false, message: 'গ্রাহক খুঁজে পাওয়া যায়নি.' };
-
-    // ★★★ নতুন এবং চূড়ান্তভাবে পরীক্ষিত FIFO লজিক (Chain Reaction Bug Fix) ★★★
-    let remainingAmountToDistribute = receivedAmount;
-    let finalMessage = `৳${toBengaliNumber(receivedAmount)} পেমেন্ট সফলভাবে জমা হয়েছে।`;
-
-    // ধাপ ১: গ্রাহকের সকল বিল খুঁজে বের করা এবং সবচেয়ে পুরনো বিল আগে রাখা
-    const allCustomerBills = db.bills
-        .filter(b => b.customerId === customer.id)
-        .sort((a, b) => new Date(a.year, a.month) - new Date(a.year, a.month));
-
-    // ধাপ ২: প্রাপ্ত টাকা দিয়ে পুরনো বিলগুলো একটির পর একটি পরিশোধ করা (পুনর্গঠিত)
-    let previousDue = 0;
-    for (const billToPay of allCustomerBills) {
-        // ★★★ মূল সমাধান: প্রতিটি বিলের কাজ শুরু করার আগে তার dueAmount আপডেট করা হচ্ছে ★★★
-        billToPay.dueAmount = previousDue;
-        const dueFromAdjustments = (billToPay.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
-        billToPay.totalAmount = billToPay.monthlyAmount + billToPay.dueAmount + dueFromAdjustments;
-        billToPay.remainingDue = billToPay.totalAmount - (billToPay.paidAmount || 0) - (billToPay.discount || 0);
-
-        // শুধুমাত্র অপরিশোধিত বিলগুলোই পেমেন্ট গ্রহণ করবে
-        if (billToPay.status === 'paid') {
-            previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
-            continue;
-        }
-        if (remainingAmountToDistribute < 0.01) {
-            previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
-            continue;
-        }
-
-        const dueOnThisBill = billToPay.remainingDue;
-        const amountToPayForThisBill = Math.min(remainingAmountToDistribute, dueOnThisBill);
-
-        billToPay.paidAmount = (billToPay.paidAmount || 0) + amountToPayForThisBill;
-        billToPay.remainingDue -= amountToPayForThisBill;
-
-        const isFinalPayment = billToPay.remainingDue < 0.01;
-
-        if (!billToPay.paymentHistory) billToPay.paymentHistory = [];
-        billToPay.paymentHistory.push({
-            id: Date.now() + Math.random(),
-            amount: amountToPayForThisBill,
-            date: new Date().toISOString(),
-            source: 'manual',
-            balanceAfter: isFinalPayment ? 0 : billToPay.remainingDue,
-            isFinalPayment: isFinalPayment,
-            newAdvance: 0
-        });
-
-        if (isFinalPayment) {
-            billToPay.remainingDue = 0;
-            billToPay.status = 'paid';
-            billToPay.isPaid = true;
-            addActivity('bill_status_paid', `${customer.name}-এর ${months[billToPay.month]} মাসের বিল পরিশোধিত হয়েছে`, {
-                customerName: customer.name, amount: amountToPayForThisBill, month: billToPay.month, year: billToPay.year
-            });
-        } else {
-            billToPay.status = 'partially_paid';
-            addActivity('payment_history', `${customer.name}-এর ${months[billToPay.month]} মাসের বিল আংশিক পরিশোধিত`, {
-                customerName: customer.name, amount: amountToPayForThisBill, remainingDue: billToPay.remainingDue, month: billToPay.month, year: billToPay.year
-            });
-        }
-
-        remainingAmountToDistribute -= amountToPayForThisBill;
-        previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
-    }
-
-    // ধাপ ৩: সকল বকেয়া পরিশোধের পর যদি টাকা অবশিষ্ট থাকে, তবে তা অ্যাডভান্স হিসেবে জমা হবে
-    if (remainingAmountToDistribute > 0) {
-        customer.advanceBalance = (customer.advanceBalance || 0) + remainingAmountToDistribute;
-        finalMessage += ` অতিরিক্ত ৳${toBengaliNumber(remainingAmountToDistribute.toFixed(2))} অ্যাডভান্স হিসেবে জমা হয়েছে।`;
-        
-        const lastPaidBill = allCustomerBills.filter(b => b.status === 'paid').slice(-1)[0];
-        if (lastPaidBill) {
-            const lastPaymentInHistory = lastPaidBill.paymentHistory.slice(-1)[0];
-            if (lastPaymentInHistory) {
-                lastPaymentInHistory.newAdvance = remainingAmountToDistribute;
-            }
-        }
-        
-        addActivity('deposit_advance', `${customer.name}-এর অ্যাকাউন্টে অতিরিক্ত ৳${toBengaliNumber(remainingAmountToDistribute.toFixed(2))} অ্যাডভান্স জমা হয়েছে`, {
-            customerName: customer.name, amount: remainingAmountToDistribute, source: 'Overpayment'
-        });
-    }
-
-    // ধাপ ৪: গ্রাহকের নিষ্ক্রিয় হওয়ার লজিক (এখন সঠিক ডেটার উপর কাজ করবে)
-    let wasDeactivated = false;
-    const hasRemainingDues = db.bills.some(b => b.customerId === customer.id && b.status !== 'paid');
-    if (!hasRemainingDues && customer.deactivationPending === true) {
-        customer.isActive = false;
-        customer.deactivationPending = false;
-        wasDeactivated = true;
-        finalMessage = `পেমেন্ট সফল এবং গ্রাহক "${customer.name}"-কে নিষ্ক্রিয় করা হয়েছে।`;
-        addActivity('customer_deactivated_auto', `বিল পরিশোধের পর ${customer.name} স্বয়ংক্রিয়ভাবে নিষ্ক্রিয় হয়েছে।`, { customerName: customer.name });
-    }
-
-    saveDb();
-
-    return {
-        success: true,
-        message: finalMessage,
-        deactivated: wasDeactivated
-    };
-}
+      function logPayment(billId, receivedAmount) {
+          const initialBill = db.bills.find(b => b.id === billId);
+          if (!initialBill) return { success: false, message: 'বিল খুঁজে পাওয়া যায়নি।' };
+      
+          const customer = db.customers.find(c => c.id === initialBill.customerId);
+          if (!customer) return { success: false, message: 'গ্রাহক খুঁজে পাওয়া যায়নি.' };
+      
+          // ★★★ নতুন এবং চূড়ান্তভাবে পরীক্ষিত FIFO লজিক (Chain Reaction Bug Fix) ★★★
+          let remainingAmountToDistribute = receivedAmount;
+          let finalMessage = `৳${toBengaliNumber(receivedAmount)} পেমেন্ট সফলভাবে জমা হয়েছে।`;
+      
+          // ধাপ ১: গ্রাহকের সকল বিল খুঁজে বের করা এবং সবচেয়ে পুরনো বিল আগে রাখা
+          const allCustomerBills = db.bills
+              .filter(b => b.customerId === customer.id)
+              .sort((a, b) => new Date(a.year, a.month) - new Date(a.year, a.month));
+      
+          // ধাপ ২: প্রাপ্ত টাকা দিয়ে পুরনো বিলগুলো একটির পর একটি পরিশোধ করা (পুনর্গঠিত)
+          let previousDue = 0;
+          for (const billToPay of allCustomerBills) {
+              // ★★★ মূল সমাধান: প্রতিটি বিলের কাজ শুরু করার আগে তার dueAmount আপডেট করা হচ্ছে ★★★
+              billToPay.dueAmount = previousDue;
+              const dueFromAdjustments = (billToPay.adjustments || []).filter(a => a.type === 'due').reduce((sum, a) => sum + a.amount, 0);
+              billToPay.totalAmount = billToPay.monthlyAmount + billToPay.dueAmount + dueFromAdjustments;
+              billToPay.remainingDue = billToPay.totalAmount - (billToPay.paidAmount || 0) - (billToPay.discount || 0);
+      
+              // শুধুমাত্র অপরিশোধিত বিলগুলোই পেমেন্ট গ্রহণ করবে
+              if (billToPay.status === 'paid') {
+                  previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
+                  continue;
+              }
+              if (remainingAmountToDistribute < 0.01) {
+                  previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
+                  continue;
+              }
+      
+              const dueOnThisBill = billToPay.remainingDue;
+              const amountToPayForThisBill = Math.min(remainingAmountToDistribute, dueOnThisBill);
+      
+              billToPay.paidAmount = (billToPay.paidAmount || 0) + amountToPayForThisBill;
+              billToPay.remainingDue -= amountToPayForThisBill;
+      
+              const isFinalPayment = billToPay.remainingDue < 0.01;
+      
+              if (!billToPay.paymentHistory) billToPay.paymentHistory = [];
+              billToPay.paymentHistory.push({
+                  id: Date.now() + Math.random(),
+                  amount: amountToPayForThisBill,
+                  date: new Date().toISOString(),
+                  source: 'manual',
+                  balanceAfter: isFinalPayment ? 0 : billToPay.remainingDue,
+                  isFinalPayment: isFinalPayment,
+                  newAdvance: 0
+              });
+      
+              if (isFinalPayment) {
+                  billToPay.remainingDue = 0;
+                  billToPay.status = 'paid';
+                  billToPay.isPaid = true;
+                  addActivity('bill_status_paid', `${customer.name}-এর ${months[billToPay.month]} মাসের বিল পরিশোধিত হয়েছে`, {
+                      customerName: customer.name, amount: amountToPayForThisBill, month: billToPay.month, year: billToPay.year
+                  });
+              } else {
+                  billToPay.status = 'partially_paid';
+                  addActivity('payment_history', `${customer.name}-এর ${months[billToPay.month]} মাসের বিল আংশিক পরিশোধিত`, {
+                      customerName: customer.name, amount: amountToPayForThisBill, remainingDue: billToPay.remainingDue, month: billToPay.month, year: billToPay.year
+                  });
+              }
+      
+              remainingAmountToDistribute -= amountToPayForThisBill;
+              previousDue = billToPay.remainingDue < 0.01 ? 0 : billToPay.remainingDue;
+          }
+      
+          // ধাপ ৩: সকল বকেয়া পরিশোধের পর যদি টাকা অবশিষ্ট থাকে, তবে তা অ্যাডভান্স হিসেবে জমা হবে
+          if (remainingAmountToDistribute > 0) {
+              customer.advanceBalance = (customer.advanceBalance || 0) + remainingAmountToDistribute;
+              finalMessage += ` অতিরিক্ত ৳${toBengaliNumber(remainingAmountToDistribute.toFixed(2))} অ্যাডভান্স হিসেবে জমা হয়েছে।`;
+              
+              const lastPaidBill = allCustomerBills.filter(b => b.status === 'paid').slice(-1)[0];
+              if (lastPaidBill) {
+                  const lastPaymentInHistory = lastPaidBill.paymentHistory.slice(-1)[0];
+                  if (lastPaymentInHistory) {
+                      lastPaymentInHistory.newAdvance = remainingAmountToDistribute;
+                  }
+              }
+              
+              addActivity('advance_deposit', `${customer.name}-এর অ্যাকাউন্টে অতিরিক্ত ৳${toBengaliNumber(remainingAmountToDistribute.toFixed(2))} অ্যাডভান্স জমা হয়েছে`, {
+                  customerName: customer.name, amount: remainingAmountToDistribute, source: 'Overpayment'
+              });
+          }
+      
+          // ধাপ ৪: গ্রাহকের নিষ্ক্রিয় হওয়ার লজিক (এখন সঠিক ডেটার উপর কাজ করবে)
+          let wasDeactivated = false;
+          const hasRemainingDues = db.bills.some(b => b.customerId === customer.id && b.status !== 'paid');
+          if (!hasRemainingDues && customer.deactivationPending === true) {
+              customer.isActive = false;
+              customer.deactivationPending = false;
+              wasDeactivated = true;
+              finalMessage = `পেমেন্ট সফল এবং গ্রাহক "${customer.name}"-কে নিষ্ক্রিয় করা হয়েছে।`;
+              addActivity('customer_deactivated_auto', `বিল পরিশোধের পর ${customer.name} স্বয়ংক্রিয়ভাবে নিষ্ক্রিয় হয়েছে।`, { customerName: customer.name });
+          }
+      
+          saveDb();
+      
+          return {
+              success: true,
+              message: finalMessage,
+              deactivated: wasDeactivated
+          };
+      }
 
       // পেমেন্ট মোডালের বাটনগুলোর জন্য ইভেন্ট লিসেনার যোগ করা
       const submitPaymentBtn = document.getElementById('submit-payment-btn');
