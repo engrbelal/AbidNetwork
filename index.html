@@ -3185,6 +3185,7 @@
       const months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর',
         'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
       ];
+      const monthsShortEng = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const years = Array.from({
         length: 10
       }, (_, i) => new Date().getFullYear() - 5 + i);
@@ -4187,19 +4188,27 @@
           const totalOverdueAmount = overdueBills.reduce((sum, bill) => sum + bill.remainingDue, 0);
           let mainText = '';
           if (hasDueBills) {
-              const overdueMonths = [...new Set(overdueBills.map(b => {
-                  if (b.month !== currentMonth || b.year !== currentYear) {
-                      return months[b.month];
-                  }
-                  return null;
-              }).filter(Boolean))];
-              
-              let monthInfoText = '';
-              if (overdueMonths.length > 0) {
-                  monthInfoText = ` (প্রধানত <strong>${overdueMonths.join(', ')}</strong> মাসের)`;
+          // ★★★ নতুন এবং চূড়ান্ত মাসের নাম দেখানোর স্মার্ট লজিক (বোল্ড টেক্সট সহ) ★★★
+          const overdueMonthIndexes = [...new Set(overdueBills.map(b => b.month))];
+          
+          let monthInfoText = '';
+          if (overdueMonthIndexes.length > 0) {
+              if (overdueMonthIndexes.length === 1) {
+                  // শর্ত ১: শুধু ১টি মাস বকেয়া থাকলে (বাংলায় এবং বোল্ড)
+                  monthInfoText = ` (<strong>${months[overdueMonthIndexes[0]]}</strong> মাসের)`;
+              } else if (overdueMonthIndexes.length === 2) {
+                  // শর্ত ২: ২টি মাস বকেয়া থাকলে (বাংলায় এবং বোল্ড)
+                  const monthNamesBn = overdueMonthIndexes.map(index => `<strong>${months[index]}</strong>`);
+                  monthInfoText = ` (${monthNamesBn.join(' ও ')} মাসের)`;
+              } else {
+                  // শর্ত ৩: ২টির বেশি মাস বকেয়া থাকলে (সংক্ষিপ্ত ইংরেজিতে এবং বোল্ড)
+                  const monthNamesEng = overdueMonthIndexes.map(index => monthsShortEng[index]);
+                  monthInfoText = ` (প্রধানত <strong>${monthNamesEng.join(', ')}</strong> মাসের)`;
               }
-      
-              mainText = `<strong>${toBengaliNumber(overdueBills.length)} জন</strong> গ্রাহকের বিল বকেয়া রয়েছে${monthInfoText}। মোট বকেয়াঃ <strong>৳${toBengaliNumber(totalOverdueAmount.toFixed(2))}</strong>`;
+          }
+  
+          mainText = `<strong>${toBengaliNumber(overdueBills.length)} জন</strong> গ্রাহকের বিল বকেয়া রয়েছে${monthInfoText}। মোট বকেয়াঃ <strong>৳${toBengaliNumber(totalOverdueAmount.toFixed(2))}</strong>`;
+
           } else if (hasUrgentGenerate || hasNormalGenerate) {
               const totalToGenerate = allMessages.filter(m => m.type.startsWith('generate')).length;
               mainText = `<strong>${toBengaliNumber(totalToGenerate)} জন</strong> গ্রাহকের বিল তৈরি করা প্রয়োজন।`;
@@ -5025,7 +5034,6 @@
               li.innerHTML = `
                   <span class="adjustment-info">${typeText}: ৳${toBengaliNumber(adj.amount)} (${adj.notes || 'N/A'})</span>
                   <div class="adjustment-actions">
-                      {/* ★★★ এখানে পরিবর্তন করা হয়েছে ★★★ */}
                       <button class="btn action-btn" style="background-color: #3182CE;" onclick="editAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Edit</button>
                       <button class="btn btn-delete action-btn" onclick="deleteAdjustment('${bill.id}', '${adj.id}')" ${disabledAttribute}>Del</button>
                   </div>
