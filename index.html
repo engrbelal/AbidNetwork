@@ -3,67 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirect Back to App</title>
+    <title>Processing Login...</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
-        /* স্টাইলগুলো এখানে সরাসরি দিয়ে দেওয়া হলো, যাতে কোনো অতিরিক্ত CSS ফাইলের প্রয়োজন না হয় */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f8ff; /* হালকা নীল ব্যাকগ্রাউন্ড */
-        }
-        .container {
-            padding: 40px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-        p {
-            color: #666;
-            margin-bottom: 30px;
-        }
-        .redirect-button {
-            display: inline-block;
-            background-color: #007bff; /* উজ্জ্বল নীল বাটন */
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.2em;
-            font-weight: bold;
-            text-decoration: none; /* লিঙ্কের আন্ডারলাইন মুছে ফেলা হলো */
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        .redirect-button:hover {
-            background-color: #0056b3; /* হোভার করলে গাঢ় নীল হবে */
-        }
-        .redirect-button:active {
-            transform: scale(0.98); /* ক্লিক করলে সামান্য ছোট হবে */
-        }
+        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; text-align: center; }
+        .container { padding: 20px; }
+        h1 { color: #333; }
+        p { color: #666; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>কাজ প্রায় শেষ!</h1>
-        <p>আপনার অ্যাপে ফিরে যাওয়ার জন্য নিচের বাটনে ক্লিক করুন।</p>
-        
-        <!-- 
-            এটাই মূল অংশ। এই লিঙ্কে ক্লিক করলে আপনার অ্যাপটি খোলার চেষ্টা করবে।
-            href এর মানটি আপনার অ্যাপের প্যাকেজ আইডি দিয়ে শুরু হতে হবে।
-        -->
-        <a href="com.belal.dutymanager://" class="redirect-button">অ্যাপে ফিরে যান</a>
+        <h1>লগইন প্রক্রিয়া চলছে...</h1>
+        <p>অনুগ্রহ করে অপেক্ষা করুন। আপনাকে স্বয়ংক্রিয়ভাবে অ্যাপে ফিরিয়ে নেওয়া হবে।</p>
+        <div class="loader"></div>
     </div>
 
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCloFLoT6-EGCqvuHXdehVmsQowzlCl6w4",
+            authDomain: "dutymanagerapp.firebaseapp.com",
+            projectId: "dutymanagerapp",
+            storageBucket: "dutymanagerapp.appspot.com",
+            messagingSenderId: "700577418205",
+            appId: "1:700577418205:web:1d9713f6f05944eb56c434"
+        };
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const provider = new firebase.auth.GoogleAuthProvider();
+
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // সফলভাবে লগইন হলে, ID Token সংগ্রহ করা
+                    return result.user.getIdToken();
+                })
+                .then((idToken) => {
+                    // ID Token দিয়ে অ্যাপের কাস্টম URL-এ রিডাইরেক্ট করা
+                    const customUrl = `com.belal.dutymanager://login-success?token=${idToken}`;
+                    window.location.href = customUrl;
+                })
+                .catch((error) => {
+                    // কোনো সমস্যা হলে, অ্যাপে এরর বার্তা পাঠানো
+                    const customUrl = `com.belal.dutymanager://login-failed?error=${encodeURIComponent(error.message)}`;
+                    window.location.href = customUrl;
+                });
+        } catch (e) {
+            const customUrl = `com.belal.dutymanager://login-failed?error=${encodeURIComponent(e.message)}`;
+            window.location.href = customUrl;
+        }
+    </script>
 </body>
 </html>
