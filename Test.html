@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirect Back to App</title>
+    <style>
+        /* স্টাইলগুলো এখানে সরাসরি দিয়ে দেওয়া হলো, যাতে কোনো অতিরিক্ত CSS ফাইলের প্রয়োজন না হয় */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f8ff; /* হালকা নীল ব্যাকগ্রাউন্ড */
+        }
+        .container {
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .redirect-button {
+            display: inline-block;
+            background-color: #007bff; /* উজ্জ্বল নীল বাটন */
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-decoration: none; /* লিঙ্কের আন্ডারলাইন মুছে ফেলা হলো */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .redirect-button:hover {
+            background-color: #0056b3; /* হোভার করলে গাঢ় নীল হবে */
+        }
+        .redirect-button:active {
+            transform: scale(0.98); /* ক্লিক করলে সামান্য ছোট হবে */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>কাজ প্রায় শেষ!</h1>
+        <p>আপনার অ্যাপে ফিরে যাওয়ার জন্য নিচের বাটনে ক্লিক করুন।</p>
+        
+        <!-- 
+            এটাই মূল অংশ। এই লিঙ্কে ক্লিক করলে আপনার অ্যাপটি খোলার চেষ্টা করবে।
+            href এর মানটি আপনার অ্যাপের প্যাকেজ আইডি দিয়ে শুরু হতে হবে।
+        -->
+        <a href="com.belal.dutymanager://" class="redirect-button">অ্যাপে ফিরে যান</a>
+    </div>
+
+</body>
+</html>
